@@ -34,8 +34,8 @@ public class GameView extends JFrame{
 		setVisible(true);
 		
 		// focus ÁöÁ¤
-		//container.setFocusable(true);
-		//container.requestFocus();
+		// container.setFocusable(true);
+		// container.requestFocus();
 		mapPanel.setFocusable(true);
 		mapPanel.requestFocus();
 	}
