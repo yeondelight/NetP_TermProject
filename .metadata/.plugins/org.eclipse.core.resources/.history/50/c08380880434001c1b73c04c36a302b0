@@ -1,0 +1,95 @@
+import javax.swing.JFrame;
+
+public class GameApp extends JFrame{
+	/**
+	 * Create the frame.
+	 */
+	public JavaObjClientView(String username, String ip_addr, String port_no) {
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setBounds(100, 100, 394, 630);
+		contentPane = new JPanel();
+		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		setContentPane(contentPane);
+		contentPane.setLayout(null);
+
+		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setBounds(12, 10, 352, 471);
+		contentPane.add(scrollPane);
+
+		textArea = new JTextPane();
+		textArea.setEditable(true);
+		textArea.setFont(new Font("±¼¸²Ã¼", Font.PLAIN, 14));
+		scrollPane.setViewportView(textArea);
+
+		txtInput = new JTextField();
+		txtInput.setBounds(74, 489, 209, 40);
+		contentPane.add(txtInput);
+		txtInput.setColumns(10);
+
+		btnSend = new JButton("Send");
+		btnSend.setFont(new Font("±¼¸²", Font.PLAIN, 14));
+		btnSend.setBounds(295, 489, 69, 40);
+		contentPane.add(btnSend);
+
+		lblUserName = new JLabel("Name");
+		lblUserName.setBorder(new LineBorder(new Color(0, 0, 0)));
+		lblUserName.setBackground(Color.WHITE);
+		lblUserName.setFont(new Font("±¼¸²", Font.BOLD, 14));
+		lblUserName.setHorizontalAlignment(SwingConstants.CENTER);
+		lblUserName.setBounds(12, 539, 62, 40);
+		contentPane.add(lblUserName);
+		setVisible(true);
+
+		AppendText("User " + username + " connecting " + ip_addr + " " + port_no);
+		UserName = username;
+		lblUserName.setText(username);
+
+		imgBtn = new JButton("+");
+		imgBtn.setFont(new Font("±¼¸²", Font.PLAIN, 16));
+		imgBtn.setBounds(12, 489, 50, 40);
+		contentPane.add(imgBtn);
+		
+		JButton btnNewButton = new JButton("Á¾ ·á");
+		btnNewButton.setFont(new Font("±¼¸²", Font.PLAIN, 14));
+		btnNewButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				ChatMsg msg = new ChatMsg(UserName, "400", "Bye");
+				SendObject(msg);
+				System.exit(0);
+			}
+		});
+		btnNewButton.setBounds(295, 539, 69, 40);
+		contentPane.add(btnNewButton);
+
+		try {
+			socket = new Socket(ip_addr, Integer.parseInt(port_no));
+//			is = socket.getInputStream();
+//			dis = new DataInputStream(is);
+//			os = socket.getOutputStream();
+//			dos = new DataOutputStream(os);
+
+			oos = new ObjectOutputStream(socket.getOutputStream());
+			oos.flush();
+			ois = new ObjectInputStream(socket.getInputStream());
+
+			//SendMessage("/login " + UserName);
+			ChatMsg obcm = new ChatMsg(UserName, "100", "Hello");
+			SendObject(obcm);
+			
+			ListenNetwork net = new ListenNetwork();
+			net.start();
+			TextSendAction action = new TextSendAction();
+			btnSend.addActionListener(action);
+			txtInput.addActionListener(action);
+			txtInput.requestFocus();
+			ImageSendAction action2 = new ImageSendAction();
+			imgBtn.addActionListener(action2);
+
+		} catch (NumberFormatException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			AppendText("connect error");
+		}
+
+	}
+}

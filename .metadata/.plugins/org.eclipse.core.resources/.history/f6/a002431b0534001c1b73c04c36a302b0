@@ -1,0 +1,10 @@
+
+public class MainApp {
+	try {
+		GameView frame = new GameView();
+		frame.setVisible(true);
+	}
+	catch(Exception e) {
+		e.printStackTrace();
+	}
+}

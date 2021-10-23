@@ -1,0 +1,38 @@
+import javax.swing.JLabel;
+
+public class Timer extends Thread{
+	
+	private JLabel timerLabel;		// timer를 표시할 JLabel
+	private int timeout = 60;		// default : 60sec
+	private boolean timerStatus;	// timer의 작동 상태 확인
+	
+	public Timer(JLabel timerLabel) {
+		this.timerLabel = timerLabel;
+	}
+	
+	public void setTimeout(int timeout) {
+		this.timeout = timeout;
+		timerStatus = false;
+	}
+	
+	public void run() {
+		timerStatus = true;		// timer 작동
+		while(true) {
+			try {
+				timerLabel.setText("남은 시간 : " + timeout + "초");
+				Thread.sleep(1000);
+				timeout--;
+				
+				// timeout 설정
+				if(timeout <= 0) {
+					timerStatus = false;
+					break;
+				}
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+}

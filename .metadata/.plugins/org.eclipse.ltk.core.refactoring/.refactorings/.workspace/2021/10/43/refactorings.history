@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename Java project &apos;GameClient&apos; to &apos;SinglePlay&apos;&#x0D;&#x0A;- Original element: &apos;GameClient&apos;&#x0D;&#x0A;- Renamed element: &apos;GameClient&apos;&#x0D;&#x0A;- Update references to refactored element" description="Rename Java project &apos;GameClient&apos;" flags="7" id="org.eclipse.jdt.ui.rename.java.project" input="=GameClient" name="SinglePlay" references="true" stamp="1634995154627" version="1.0"/>
+</session>
