@@ -1,0 +1,43 @@
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+
+import javax.swing.JLabel;
+
+public class Score{
+	
+	private JLabel scoreLabel;			// score 표시할 JLabel
+	private int score = 0;
+	
+	private int r = 200;
+	private int g = 200;
+	private int b = 240;
+	
+	public Score(JLabel scoreLabel) {
+		this.scoreLabel = scoreLabel;
+		scoreLabel.setOpaque(true);						// 배경색을 설정하기 위함
+		scoreLabel.setBackground(new Color(r, g, b));
+		scoreLabel.setPreferredSize(new Dimension(190, 30));	// 폭 크기 고정
+		scoreLabel.setFont(new Font("맑은 고딕", Font.BOLD, 20));
+		update();
+	}
+	
+	// 점수 update
+	public void update() {
+		scoreLabel.setText(" 현재 점수 : " + score + " 점 ");
+	}
+
+	public void addScore(int score) {
+		this.score += score;
+		update();
+	}
+	
+	public void delScore(int score) {
+		// 최저 점수는 0점이다.
+		if (this.score - score <= 0)
+			score = 0;
+		else
+			this.score -= score;
+		update();
+	}
+}

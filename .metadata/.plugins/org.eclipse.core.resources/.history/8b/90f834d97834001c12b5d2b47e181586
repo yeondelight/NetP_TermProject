@@ -1,0 +1,21 @@
+import java.awt.FlowLayout;
+
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
+
+public class InfoPanel extends JPanel{
+	
+	private Timer timer;
+	
+	private JLabel timerLabel;
+
+	// num에 따라 그에 맞는 미로 Map을 만드는 생성자
+	public InfoPanel(){
+		setLayout(new FlowLayout());
+		
+		timerLabel = new JLabel();
+		add(timerLabel);
+	}
+	
+}
