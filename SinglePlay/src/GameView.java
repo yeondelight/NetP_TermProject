@@ -1,16 +1,19 @@
+import java.awt.BorderLayout;
 import java.awt.Container;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.Dimension;
 
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 
 public class GameView extends JFrame{
 	
 	private final int MAPNUM = 1;		// 임시로 1로 설정 : 방마다 다르게 해보기
+	private final int ITEMS = 5;		// map에서 나타날 아이템의 수
 	
-	private Container container;
-	private MapPanel mapPanel;
+	private final int WIDTH = 415;		// component의 가로 갈이를 맞추기 위해 설정
+	
+	private Container contentPane;
+	private MapPanel mapPanel;			// map이 나타나는 Panel
+	private InfoPanel infoPanel;		// Timer와 Score가 나타나는 Panel
 	
 	// JFrame 생성 : Swing Frame
 	public GameView() {
@@ -18,24 +21,24 @@ public class GameView extends JFrame{
 		setTitle("SinglePlay Test");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
-		//container = getContentPane();
-		//container.setLayout(null);
+		contentPane = getContentPane();
+		contentPane.setLayout(new BorderLayout(5, 5));
 		
-		// Map 붙이기 : (0, 0) ~ (400, 400)
-		mapPanel = new MapPanel(MAPNUM);
-		setContentPane(mapPanel);
-		mapPanel.setLocation(0, 0);
-		mapPanel.setSize(mapPanel.getRow()*mapPanel.getUnit(), mapPanel.getCol()*mapPanel.getUnit());
-		//container.add(mapPanel);
+		// Map 붙이기
+		mapPanel = new MapPanel(MAPNUM, ITEMS, WIDTH);
+		contentPane.add(mapPanel, BorderLayout.CENTER);
+		
+		// Timer Thread, Score 붙이기
+		infoPanel = new InfoPanel(WIDTH);
+		contentPane.add(infoPanel, BorderLayout.NORTH);
+	
 
 		// Frame 크기 설정
-		setSize(900, 500);
+		setSize(WIDTH, 500);
 		setResizable(false);
 		setVisible(true);
 		
 		// focus 지정
-		//container.setFocusable(true);
-		//container.requestFocus();
 		mapPanel.setFocusable(true);
 		mapPanel.requestFocus();
 	}

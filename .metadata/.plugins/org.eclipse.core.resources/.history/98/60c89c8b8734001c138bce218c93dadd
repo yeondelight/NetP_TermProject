@@ -1,0 +1,220 @@
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.Point;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.Random;
+
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
+public class MapPanel extends JPanel{
+	
+	private final int MAXMAP = 2;	// map의 총 개수
+	private final int ROWS = 20;	// map의 가로길이
+	private final int COLS = 20;	// map의 세로길이
+	private final int UNIT = 20;	// map의 한 칸의 길이 (pixel)
+	
+	private int[][] map;			// main map
+	
+	// item 정보
+	private ArrayList<Point> items = new ArrayList<Point>();
+	private ImageIcon iIcon = new ImageIcon("res/item.png");
+	private Image item = iIcon.getImage();
+	
+	// player 정보
+	private ImageIcon pIcon = new ImageIcon("res/smile.png");
+	private Image player = pIcon.getImage();
+	private int playerX = UNIT;
+	private int playerY = 0;
+	
+	// game 결과
+	private boolean gameover = false;
+
+	// num에 따라 그에 맞는 미로 Map을 만드는 생성자
+	public MapPanel(int num, int itemNum, int width){
+		initMap(num);
+		initItem(itemNum);
+		addKeyListener(new PlayerKeyboardListener());
+	
+		setLayout(null);
+		setPreferredSize(new Dimension(width, width));
+		
+		result.setOpaque(true);						// 배경색을 설정하기 위함
+		result.setBackground(new Color(200, 240, 200));
+		result.setFont(new Font("맑은 고딕", Font.BOLD, 20));
+		result.setLocation(200, 200);
+		//result.setVisible(false);
+		add(result);
+		
+		// Timer Thread 감시 : TIMEOVER가 되면 Thread를 강제 종료하고 reset시킨다.
+		new Thread() {
+			public void run() {
+				while(true) {
+					try {
+						Thread.sleep(1000);
+						if(Timer.getStatus() == false) {
+							// game reset codes
+							gameover = true;
+							return;
+						}
+					}
+					catch(Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		}.start();
+	}
+	
+	// map1, map2중 나타낼 map을 결정하는 함수
+	private void initMap(int num) {
+		int [][] map1 = 
+			 {
+				{1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+				{1,0,1,0,0,0,1,0,0,1,1,1,1,0,0,0,0,1,1,1},
+				{1,0,1,1,1,0,1,0,0,0,0,0,0,0,0,0,0,0,1,1},
+				{1,0,1,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,1},
+				{1,0,1,1,1,1,0,0,1,0,1,0,0,0,0,0,0,0,0,1},
+				{1,0,1,0,0,1,0,0,1,0,1,0,1,0,1,1,1,1,1,1},
+				{1,0,1,0,0,1,0,0,1,0,1,0,1,0,1,0,0,0,0,1},
+				{1,0,1,0,0,1,0,0,1,0,1,0,1,1,1,0,0,1,0,1},
+				{1,0,1,1,0,1,1,0,0,0,1,0,0,0,0,0,0,1,0,1},
+				{1,0,0,0,0,0,1,0,1,0,1,1,1,1,1,1,1,1,0,1},
+				{1,1,0,0,1,1,1,0,1,1,0,0,1,0,0,0,0,1,0,1},
+				{1,1,1,0,0,0,1,0,0,0,0,1,1,1,0,1,0,1,0,5},
+				{1,0,1,1,0,0,1,1,1,1,0,1,0,0,0,1,0,1,1,1},
+				{1,0,0,1,0,0,1,0,0,1,0,1,0,0,0,1,0,0,0,1},
+				{1,0,1,1,0,0,1,0,0,1,0,1,1,1,1,1,1,0,1,1},
+				{1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,1},
+				{1,1,0,1,1,1,1,1,1,1,0,0,0,1,1,1,1,0,1,1},
+				{1,1,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,1,1},
+				{1,1,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1},
+				{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+			};
+		
+		int [][] map2 = 
+			{
+				{1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+				{1,0,0,1,0,0,0,0,0,0,1,0,0,0,1,1,0,0,0,1},
+				{1,0,1,1,1,1,1,0,1,1,1,0,1,0,0,0,0,1,0,1},
+				{1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,1,1,1,0,1},
+				{1,0,1,1,0,0,1,0,1,1,1,1,1,0,0,0,0,0,0,1},
+				{1,0,1,0,0,1,1,0,0,0,0,0,1,1,0,0,1,1,1,1},
+				{1,0,1,0,0,0,0,0,0,1,1,0,0,0,1,0,1,0,0,1},
+				{1,0,1,1,1,1,1,1,0,1,1,1,1,0,1,0,0,0,0,1},
+				{1,0,1,0,0,1,0,1,0,1,0,0,0,0,1,1,0,1,1,1},
+				{1,0,0,0,0,0,0,1,0,1,0,0,1,1,1,1,0,0,1,1},
+				{1,0,1,1,1,1,0,1,0,1,0,0,0,0,0,0,1,0,0,1},
+				{1,0,1,0,0,1,0,1,0,1,1,1,1,1,0,1,1,1,0,5},
+				{1,0,1,0,1,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1},
+				{1,0,1,0,0,0,0,1,0,1,0,1,0,0,1,1,0,1,1,1},
+				{1,0,1,1,1,0,0,1,0,1,0,0,0,0,0,1,0,0,1,1},
+				{1,0,0,0,1,1,1,1,0,1,1,1,0,1,1,1,1,0,1,1},
+				{1,0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,1},
+				{1,0,1,1,1,1,0,0,0,1,0,1,1,1,1,1,1,1,1,1},
+				{1,0,1,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1},
+				{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+			};
+		
+		if (num % 2 == 1)	map = map1;
+		else				map = map2;
+	}
+	
+	// item의 위치를 결정하는 함수
+	private void initItem(int itemNum) {
+		int count = 0;
+		Random random = new Random();
+		do {
+			int x = random.nextInt(ROWS);
+			int y = random.nextInt(COLS);
+			if(getXY(x, y) == 0) {
+				items.add(new Point(x, y));
+				count++;
+			}
+		}while(count < itemNum);
+	}
+	
+	// row, col의 좌표에 대해 길인지 벽인지 검사하는 함수
+	public int getXY(int row, int col) {
+		return map[col][row];
+	}
+
+	// 게임 진행 상황 그리기
+	public void paintComponent(Graphics g) {
+		super.paintComponent(g);
+		
+		// map 그리기
+		for(int i = 0; i < COLS; i++) {
+			for (int j = 0; j < ROWS; j++) {
+				if (getXY(i, j) == 1)	g.setColor(Color.DARK_GRAY);
+				else 					g.setColor(Color.LIGHT_GRAY);
+				g.fillRect(i*UNIT, j*UNIT, UNIT, UNIT);
+			}
+		}
+		
+		// item 그리기
+		for(int i = 0; i < items.size(); i++) {
+			Point p = items.get(i);
+			g.drawImage(item, p.x*UNIT, p.y*UNIT, UNIT, UNIT, this);
+		}
+		
+		// player 그리기
+		g.drawImage(player, playerX, playerY, UNIT, UNIT, this);
+		
+		// gameover 그리기
+		if (gameover) {
+			g.setColor(new Color(255, 255, 255));
+			g.setFont(new Font("Arial", Font.ITALIC, 30));
+			g.drawString(" GAME OVER!! ", 100, 200);
+		}
+		
+	}
+	
+	// player를 움직이는 keyBoard callBack
+	class PlayerKeyboardListener extends KeyAdapter{
+		
+		public void keyPressed(KeyEvent e) {
+			int keyCode = e.getKeyCode();
+			
+			System.out.println(playerX + ", " + playerY + ", " + keyCode);
+			
+			// 화살표의 방향에 따라 움직이기
+			switch(keyCode) {
+			case KeyEvent.VK_UP:
+				if(getXY(playerX/UNIT, playerY/UNIT - 1) != 1 && playerY > 0)
+					playerY -= UNIT;
+				break;
+			case KeyEvent.VK_DOWN:
+				if(getXY(playerX/UNIT, playerY/UNIT + 1) != 1 && playerY < 400)
+					playerY += UNIT;
+				break;
+			case KeyEvent.VK_LEFT:
+				if(getXY(playerX/UNIT - 1, playerY/UNIT) != 1 && playerX > 0)
+					playerX -= UNIT;
+				break;
+			case KeyEvent.VK_RIGHT:
+				if(getXY(playerX/UNIT + 1, playerY/UNIT) != 1 && playerX < 400)
+					playerX += UNIT;
+				break;
+			}
+			
+			// item을 먹으면 점수를 증가시킨다.
+			for(int i = 0; i < items.size(); i++) {
+				Point p = items.get(i);
+				if(p.x*UNIT == playerX && p.y*UNIT == playerY) {
+					items.remove(i);
+					Score.addScore(10);
+				}
+			}
+			
+			repaint();
+		}
+	}
+}

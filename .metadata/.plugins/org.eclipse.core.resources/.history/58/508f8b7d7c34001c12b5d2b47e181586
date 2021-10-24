@@ -1,0 +1,55 @@
+import java.awt.Color;
+import java.awt.Font;
+
+import javax.swing.JLabel;
+
+public class Timer extends Thread{
+	
+	private JLabel timerLabel;		// timer를 표시할 JLabel
+	private int timeout = 20;		// default : 60sec
+	private boolean timerStatus;	// timer의 작동 상태 확인
+	
+	public Timer(JLabel timerLabel) {
+		this.timerLabel = timerLabel;
+		timerLabel.setOpaque(true);		// 배경색을 설정하기 위한 값
+		timerLabel.setFont(new Font("맑은 고딕", Font.BOLD, 20));
+	}
+	
+	public void setTimeout(int timeout) {
+		this.timeout = timeout;
+		timerStatus = false;
+	}
+	
+	public boolean getStatus() {
+		return timerStatus;
+	}
+	
+	public void update() {
+		timerLabel.setText("남은 시간 : " + timeout + "초");
+		if(timeout<=10) {
+			timerLabel.setBackground(new Color(240, 150, 150));
+		}
+	}
+	
+	public void run() {
+		timerStatus = true;		// timer 작동
+		update();
+		while(true) {
+			try {
+				timeout--;
+				Thread.sleep(1000);
+				update();
+				
+				// timeout 설정
+				if(timeout <= 0) {
+					timerStatus = false;		// timer 멈춤
+					break;
+				}
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+}

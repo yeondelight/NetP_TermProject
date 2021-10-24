@@ -1,0 +1,32 @@
+import java.awt.FlowLayout;
+import java.awt.Font;
+
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+
+
+public class InfoPanel extends JPanel{
+	
+	private JLabel timerLabel = new JLabel();
+	private JLabel scoreLabel = new JLabel();
+	
+	private Timer timer = new Timer(timerLabel);
+	private Score score = new Score(scoreLabel);
+
+	// num에 따라 그에 맞는 미로 Map을 만드는 생성자
+	public InfoPanel(){
+		setLayout(new FlowLayout());
+		
+		// Label 붙이기
+		timerLabel.setFont(new Font("맑은 고딕", Font.BOLD, 20));
+		add(timerLabel);
+		add(scoreLabel);
+		
+		// 작동 설정
+		timer.start();
+	}
+	
+	public void addScore(int num) {score.addScore(num);}
+	public void delScore(int num) {score.delScore(num);}
+	
+}
