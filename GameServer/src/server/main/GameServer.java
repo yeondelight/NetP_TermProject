@@ -1,0 +1,317 @@
+package server.main;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.Vector;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.border.EmptyBorder;
+
+import server.room.Room;
+
+public class GameServer extends JFrame{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private JPanel contentPane;
+	JTextArea textArea;
+	private JTextField txtPortNumber;
+
+	private ServerSocket socket; // 서버소켓
+	private Socket client_socket; // accept() 에서 생성된 client 소켓
+	private Vector UserVec = new Vector(); // 연결된 사용자를 저장할 벡터
+	private static final int BUF_LEN = 128; // Windows 처럼 BUF_LEN 을 정의
+
+	// Room에 대한 변수 설정
+	private HashMap<Integer, Room> rooms = new HashMap<Integer, Room>();
+
+
+	// Create the frame.
+	public GameServer() {
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setBounds(100, 100, 338, 386);
+		contentPane = new JPanel();
+		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		setContentPane(contentPane);
+		contentPane.setLayout(null);
+
+		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setBounds(12, 10, 300, 244);
+		contentPane.add(scrollPane);
+
+		textArea = new JTextArea();
+		textArea.setEditable(false);
+		scrollPane.setViewportView(textArea);
+
+		JLabel lblNewLabel = new JLabel("Port Number");
+		lblNewLabel.setBounds(12, 264, 87, 26);
+		contentPane.add(lblNewLabel);
+
+		txtPortNumber = new JTextField();
+		txtPortNumber.setHorizontalAlignment(SwingConstants.CENTER);
+		txtPortNumber.setText("30000");
+		txtPortNumber.setBounds(111, 264, 199, 26);
+		contentPane.add(txtPortNumber);
+		txtPortNumber.setColumns(10);
+
+		JButton btnServerStart = new JButton("Server Start");
+		btnServerStart.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					socket = new ServerSocket(Integer.parseInt(txtPortNumber.getText()));
+				} catch (NumberFormatException | IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				AppendText("Chat Server Running..");
+				btnServerStart.setText("Chat Server Running..");
+				btnServerStart.setEnabled(false); // 서버를 더이상 실행시키지 못 하게 막는다
+				txtPortNumber.setEnabled(false); // 더이상 포트번호 수정못 하게 막는다
+				AcceptServer accept_server = new AcceptServer();
+				accept_server.start();
+			}
+		});
+		btnServerStart.setBounds(12, 300, 300, 35);
+		contentPane.add(btnServerStart);
+	}
+
+	// 새로운 참가자 accept() 하고 user thread를 새로 생성한다.
+	class AcceptServer extends Thread {
+		@SuppressWarnings("unchecked")
+		public void run() {
+			while (true) { // 사용자 접속을 계속해서 받기 위해 while문
+				try {
+					AppendText("Waiting clients ...");
+					client_socket = socket.accept(); // accept가 일어나기 전까지는 무한 대기중
+					AppendText("새로운 참가자 from " + client_socket);
+					// User 당 하나씩 Thread 생성
+					UserService new_user = new UserService(client_socket);
+					UserVec.add(new_user); // 새로운 참가자 배열에 추가
+					AppendText("사용자 입장. 현재 참가자 수 " + UserVec.size());
+					new_user.start(); // 만든 객체의 스레드 실행
+				} catch (IOException e) {
+					AppendText("!!!! accept 에러 발생... !!!!");
+				}
+			}
+		}
+	}
+
+	public void AppendText(String str) {
+		// textArea.append("사용자로부터 들어온 메세지 : " + str+"\n");
+		textArea.append(str + "\n");
+		textArea.setCaretPosition(textArea.getText().length());
+	}
+
+	// User 당 생성되는 Thread
+	// Read One 에서 대기 -> Write All
+	class UserService extends Thread {
+		private InputStream is;
+		private OutputStream os;
+		private DataInputStream dis;
+		private DataOutputStream dos;
+		private Socket client_socket;
+		private Vector user_vc;
+		private String UserName = "";
+		private String UserStatus = "O";
+		
+		// 이하 Protocol msg
+		private static final String C_LOGIN = "100";		// 새로운 client 접속
+		private static final String C_ACKLIST = "101";		// C->S 101을 정상적으로 수신
+		private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
+		private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
+		private static final String C_MAKEROOM = "200";		// 새로운 방 생성
+		private static final String C_ENTROOM = "201";		// 해당 방에 입장 
+		private static final String S_UPDROOM = "210";		// room 목록 update
+		
+		public String getUserName() {
+			return UserName;
+		}
+		
+		public String getUserStatus() {
+			return UserStatus;
+		}
+		public void setUserStatus(String status) {
+			this.UserStatus = status;
+		}
+
+		public UserService(Socket client_socket) {
+			// TODO Auto-generated constructor stub
+			// 매개변수로 넘어온 자료 저장
+			this.client_socket = client_socket;
+			this.user_vc = UserVec;
+			try {
+				is = client_socket.getInputStream();
+				dis = new DataInputStream(is);
+				os = client_socket.getOutputStream();
+				dos = new DataOutputStream(os);
+				// line1 = dis.readUTF();
+				// /login user1 ==> msg[0] msg[1]
+				byte[] b = new byte[BUF_LEN];
+				dis.read(b);
+				String line1 = new String(b);
+				String[] msg = line1.split(" ");
+				UserName = msg[1].trim();
+				AppendText("새로운 참가자 " + UserName + " 입장.");
+				WriteOne(S_REQLIST+" " + rooms.size());
+			} catch (Exception e) {
+				AppendText("userService error");
+				e.printStackTrace();
+			}
+		}
+
+		// 모든 User들에게 방송. 각각의 UserService Thread의 WriteONe() 을 호출한다.
+		public void WriteAll(String str) {
+			for (int i = 0; i < user_vc.size(); i++) {
+				UserService user = (UserService) user_vc.elementAt(i);
+				// sleep 상태인 참가자는 제외한다.
+				if(!(user.getUserStatus().equals("S")))
+					user.WriteOne(str);
+			}
+		}
+
+		// Windows 처럼 message 제외한 나머지 부분은 NULL 로 만들기 위한 함수
+		public byte[] MakePacket(String msg) {
+			byte[] packet = new byte[BUF_LEN];
+			byte[] bb = null;
+			int i;
+			for (i = 0; i < BUF_LEN; i++)
+				packet[i] = 0;
+			try {
+				bb = msg.getBytes("euc-kr");
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			for (i = 0; i < bb.length; i++)
+				packet[i] = bb[i];
+			return packet;
+		}
+
+		// UserService Thread가 담당하는 Client 에게 1:1 전송
+		public void WriteOne(String msg) {
+			try {
+				// dos.writeUTF(msg);
+				byte[] bb;
+				bb = MakePacket(msg);
+				dos.write(bb, 0, bb.length);
+			} catch (IOException e) {
+				AppendText("dos.write() error");
+				try {
+					dos.close();
+					dis.close();
+					client_socket.close();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				UserVec.removeElement(this); // 에러가난 현재 객체를 벡터에서 지운다
+				AppendText("사용자 퇴장. 현재 참가자 수 " + UserVec.size());
+			}
+		}
+
+		public void run() {
+			while (true) { // 사용자 접속을 계속해서 받기 위해 while문
+				try {
+					// String msg = dis.readUTF();
+					byte[] b = new byte[BUF_LEN];
+					int ret;
+					ret = dis.read(b);
+					if (ret < 0) {
+						AppendText("dis.read() < 0 error");
+						try {
+							dos.close();
+							dis.close();
+							client_socket.close();
+							UserVec.removeElement(this); // 에러가난 현재 객체를 벡터에서 지운다
+							AppendText("사용자 퇴장. 남은 참가자 수 " + UserVec.size());
+							break;
+						} catch (Exception ee) {
+							break;
+						} // catch문 끝
+					}
+					String msg = new String(b, "euc-kr");
+					msg = msg.trim(); // 앞뒤 blank NULL, \n 모두 제거
+					AppendText(msg); // server 화면에 출력
+					
+					// words[0] : 코드
+					// 이하 : 전송하고자 하는 메세지
+					String cmds[] = msg.split(" ");
+					
+					// 이하 Protocol 처리
+					
+					// C_ACKLIST(101)
+					// Client -> Server S_REQLIST가 정상적으로 왔음을 알림
+					// Waiting Room에 표시할 Room들의 배열을 보낸다.
+					if(cmds[0].equals(C_ACKLIST)) {
+						Set<Integer> roomKeys = rooms.keySet();
+						Iterator<Integer> roomKeysIt = roomKeys.iterator();
+						for(int i = 0; i < rooms.size(); i++) {
+							int key = roomKeysIt.next();
+							String name = rooms.get(key).getName();
+							WriteOne(S_SENLIST+" "+key+" "+name);
+						}
+					}
+					
+					// C_MAKEROOM(200)
+					// client -> Server 새로운 방을 만들어주세요
+					// Server의 hashMap에 key와 name을 넣은 Room을 만들고
+					// 해당 Room 객체 return
+					else if(cmds[0].equals(C_MAKEROOM)) {
+						int key = Integer.parseInt(cmds[1]);
+						String name = cmds[2];
+						Room room = new Room(key, name);
+						rooms.put(key, room);
+						WriteAll(S_UPDROOM+" "+key+" "+name);
+					}
+					
+					// exit 처리
+					else if(cmds[1].equals("/exit")) {
+						dos.close();
+						dis.close();
+						client_socket.close();
+						UserVec.removeElement(this);
+						WriteAll("[" + UserName + "] 님이 퇴장하셨습니다.\n");
+						AppendText("사용자 퇴장. 남은 참가자 수 " + UserVec.size());
+						break;
+					}
+						
+					else {
+						WriteAll(msg + "\n"); // Write All
+					}
+					
+				} catch (IOException e) {
+					AppendText("dis.read() error");
+					try {
+						dos.close();
+						dis.close();
+						client_socket.close();
+						UserVec.removeElement(this); // 에러가난 현재 객체를 벡터에서 지운다
+						AppendText("사용자 퇴장. 남은 참가자 수 " + UserVec.size());
+						break;
+					} catch (Exception ee) {
+						break;
+					} // catch문 끝
+				} // 바깥 catch문끝
+			} // while
+		} // run
+	}
+}
