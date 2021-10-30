@@ -10,6 +10,9 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.Vector;
 
 import javax.swing.JButton;
@@ -21,6 +24,8 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
+
+import server.room.Room;
 
 public class GameServer extends JFrame{
 	/**
@@ -36,6 +41,8 @@ public class GameServer extends JFrame{
 	private Vector UserVec = new Vector(); // 연결된 사용자를 저장할 벡터
 	private static final int BUF_LEN = 128; // Windows 처럼 BUF_LEN 을 정의
 
+	// Room에 대한 변수 설정
+	private HashMap<Integer, Room> rooms = new HashMap<Integer, Room>();
 
 
 	// Create the frame.
@@ -126,6 +133,15 @@ public class GameServer extends JFrame{
 		private String UserName = "";
 		private String UserStatus = "O";
 		
+		// 이하 Protocol msg
+		private static final String C_LOGIN = "100";		// 새로운 client 접속
+		private static final String C_ACKLIST = "101";		// C->S 101을 정상적으로 수신
+		private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
+		private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
+		private static final String C_MAKEROOM = "200";		// 새로운 방 생성
+		private static final String C_ENTROOM = "201";		// 해당 방에 입장 
+		private static final String S_UPDROOM = "210";		// room 목록 update
+		
 		public String getUserName() {
 			return UserName;
 		}
@@ -155,9 +171,7 @@ public class GameServer extends JFrame{
 				String[] msg = line1.split(" ");
 				UserName = msg[1].trim();
 				AppendText("새로운 참가자 " + UserName + " 입장.");
-				//WriteOne("Welcome to Java chat server\n");
-				//WriteOne(UserName + "님 환영합니다.\n"); // 연결된 사용자에게 정상접속을 알림
-				//WriteAll("[" + UserName + "] 님이 입장하셨습니다.\n");
+				WriteOne(S_REQLIST+" " + rooms.size());
 			} catch (Exception e) {
 				AppendText("userService error");
 				e.printStackTrace();
@@ -239,13 +253,38 @@ public class GameServer extends JFrame{
 					AppendText(msg); // server 화면에 출력
 					
 					// words[0] : 코드
-					// words[1] : /to와 같은 cmd
-					// words[2] : /to인 경우 보낼 UserName, 그 외 전송하고자 하는 메세지
 					// 이하 : 전송하고자 하는 메세지
-					String words[] = msg.split(" ");
+					String cmds[] = msg.split(" ");
+					
+					// 이하 Protocol 처리
+					
+					// C_ACKLIST(101)
+					// Client -> Server S_REQLIST가 정상적으로 왔음을 알림
+					// Waiting Room에 표시할 Room들의 배열을 보낸다.
+					if(cmds[0].equals(C_ACKLIST)) {
+						Set<Integer> roomKeys = rooms.keySet();
+						Iterator<Integer> roomKeysIt = roomKeys.iterator();
+						for(int i = 0; i < rooms.size(); i++) {
+							int key = roomKeysIt.next();
+							String name = rooms.get(key).getName();
+							WriteOne(S_SENLIST+" "+key+" "+name);
+						}
+					}
+					
+					// C_MAKEROOM(200)
+					// client -> Server 새로운 방을 만들어주세요
+					// Server의 hashMap에 key와 name을 넣은 Room을 만들고
+					// 해당 Room 객체 return
+					else if(cmds[0].equals(C_MAKEROOM)) {
+						int key = Integer.parseInt(cmds[1]);
+						String name = cmds[2];
+						Room room = new Room(key, name);
+						rooms.put(key, room);
+						WriteAll(S_UPDROOM+" "+key+" "+name);
+					}
 					
 					// exit 처리
-					if(words[1].equals("/exit")) {
+					else if(cmds[1].equals("/exit")) {
 						dos.close();
 						dis.close();
 						client_socket.close();

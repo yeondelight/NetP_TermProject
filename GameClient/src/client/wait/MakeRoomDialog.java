@@ -7,6 +7,7 @@ import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Random;
+import java.util.Vector;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -24,6 +25,8 @@ public class MakeRoomDialog extends JDialog{
 	private JButton makebtn = new JButton(" MAKE ");
 	
 	private Color bgColor = new Color(220, 220, 220);
+	
+	private Vector<Integer> keys = new Vector<Integer>();
 	
 	public MakeRoomDialog(JFrame frame, String title) {
 		super(frame, title, true);
@@ -64,11 +67,16 @@ public class MakeRoomDialog extends JDialog{
 	} // End of RoomMakeDialog()
 	
 	public int getKey() {
-		key = new Random().nextInt(899999) + 100000;
-		// 해당 key가 이미 만들어져 있는지 확인 필요
+		do{
+			key = new Random().nextInt(899999) + 100000;
+		} while(keys.contains(key));
 		keyValue.setText("  # " + key);
 		return key;
 	} // End of getKey()
+	
+	public void setKey(int key) {
+		keys.add(key);
+	}
 	
 	public String getInput() {
 		String input = name.getText();

@@ -43,7 +43,7 @@ public class RoomListPanel extends JPanel{
 		try {
 			// Room 按眉 积己茄 第 hashMap (roomInfo, rooms)俊 持绰促.
 			Room room = new Room(key, name);
-			RoomView roomView = new RoomView(key, name) ;
+			RoomView roomView = new RoomView(key, name);
 			roomInfo.put(key, name);
 			roomViews.put(key, roomView);
 			this.add(roomView.name);
