@@ -1,4 +1,4 @@
-package server.room;
+package data;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -7,6 +7,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.util.ArrayList;
 
+import server.room.RoomManager;
 
 // 게임방에 대한 정보를 담는 Room
 public class GameRoom {

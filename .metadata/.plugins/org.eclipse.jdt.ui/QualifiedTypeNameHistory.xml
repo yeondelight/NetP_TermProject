@@ -18,4 +18,7 @@
     <fullyQualifiedTypeName name="java.awt.EventQueue"/>
     <fullyQualifiedTypeName name="client.wait.ChatMsg"/>
     <fullyQualifiedTypeName name="data.ChatMsg"/>
+    <fullyQualifiedTypeName name="client.game.GameView"/>
+    <fullyQualifiedTypeName name="server.room.RoomManager"/>
+    <fullyQualifiedTypeName name="data.GameRoom"/>
 </qualifiedTypeNameHistroy>

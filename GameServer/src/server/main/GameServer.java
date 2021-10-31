@@ -28,7 +28,7 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
 import data.ChatMsg;
-import server.room.GameRoom;
+import data.GameRoom;
 import server.room.RoomManager;
 
 public class GameServer extends JFrame{
@@ -380,13 +380,23 @@ public class GameServer extends JFrame{
 						int key = Integer.parseInt(val[0]);
 						String name = val[1];
 						GameRoom room = new GameRoom(key, name);
-						System.out.println("SERVER GET : "+key+" "+name);
 						roomManager.addRoom(room);
-						WriteOneObject(new ChatMsg(UserName, S_ENTROOM, key+" "+name));
+						WriteOneObject(new ChatMsg(UserName, S_ENTROOM, key+""));
 						WriteAllObject(new ChatMsg(UserName, S_UPDROOM, roomManager.getSize()+""));
-						//this.enterRoom(room);
-						//this.setUserStatus(READYOFF);
-						//room.enterUser(this.getClientSocket());
+					}
+					
+					// C_ENTROOM(201)
+					// client -> Server 이 방에 들어갈래
+					// key에 해당하는 방 객체를 불러와 Client에게 전송 (S_ENTROOM)
+					else if (cm.getCode().matches(C_ENTROOM)) {
+						int key = Integer.parseInt(cm.getData());
+						GameRoom room = roomManager.getRoom(key);
+						ChatMsg enter = new ChatMsg(UserName, S_ENTROOM, key+"");
+						//enter.setRoom(room);
+						WriteOneObject(enter);
+						this.enterRoom(room);
+						this.setUserStatus(READYOFF);
+						room.enterUser(this.getClientSocket());
 					}
 					
 					// exit 처리

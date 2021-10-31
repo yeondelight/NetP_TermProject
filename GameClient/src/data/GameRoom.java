@@ -1,4 +1,4 @@
-package client.wait;
+package data;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

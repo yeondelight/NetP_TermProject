@@ -1,4 +1,4 @@
-package client.wait;
+package client.room;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -17,14 +17,19 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
+import client.game.GameView;
 import data.ChatMsg;
+import data.GameRoom;
 
 public class WaitingView extends JFrame{
 	
@@ -142,7 +147,7 @@ public class WaitingView extends JFrame{
 		contentPane.setFocusable(true);
 		contentPane.requestFocus();
 	}
-	
+
 	// Server Message를 수신해서 화면에 표시
 	class ListenNetwork extends Thread {
 		public void run() {
@@ -206,9 +211,17 @@ public class WaitingView extends JFrame{
 					// Server -> Client 해당 client를 room에 입장하도록 허가.
 					// GameView를 만들고 Room의 정보를 받아 모두 적는다.	
 					else if(code.equals(S_ENTROOM)) {
-						String val[] = cm.getData().split(" ");
-						int key = Integer.parseInt(val[0]);
-						String name = val[1];
+						int key = Integer.parseInt(cm.getData());
+						new Thread(){
+							public void run() {
+								try {
+									GameView gameView = new GameView();
+									gameView.setVisible(true);
+								} catch (Exception e) {
+									e.printStackTrace();
+								}
+							}
+						}.run();
 					}
 
 					
@@ -225,7 +238,7 @@ public class WaitingView extends JFrame{
 				} // 바깥 catch문끝
 			}
 		}
-	}
+	} // End of ListenNetwork
 	
 	// Windows 처럼 message 제외한 나머지 부분은 NULL 로 만들기 위한 함수
 	public byte[] MakePacket(String msg) {
@@ -244,7 +257,7 @@ public class WaitingView extends JFrame{
 		for (i = 0; i < bb.length; i++)
 			packet[i] = bb[i];
 		return packet;
-	}
+	} // End of MakePacket(msg)
 
 	// Server에게 network으로 전송
 	public void SendMessage(String msg) {
@@ -266,9 +279,142 @@ public class WaitingView extends JFrame{
 	
 	public void SendObject(Object ob) { // 서버로 메세지를 보내는 메소드
 		try {
+			ChatMsg cm = (ChatMsg) ob;
 			oos.writeObject(ob);
 		} catch (IOException e) {
 			System.out.println("메세지 송신 에러!!\n");
 		}
 	}
+
+	// RoomList를 표시하는 Panel
+	public class RoomListPanel extends JPanel{
+
+		private HashMap<Integer, String> roomInfo;		// 방의 ID, 이름을 저장한 HashMap
+		private HashMap<Integer, RoomView> roomViews;	// 해당 방에 해당하는 RoomView를 저장한 HashMap
+		
+		// GameRoom에서의 STATUS 표시
+		private final static String AVAIL = "AVAIL";
+		private final static String FULL = "FULL";
+		private final static String STARTED = "STARTED";
+		
+		// 누를 수 있는 버튼과 그렇지 않은 버튼 구분
+		private Color btnEnable = new Color(180, 210, 255);
+		private Color btnDisable = new Color(200, 200, 200);
+			
+		public RoomListPanel(HashMap<Integer, String> roomInfo) {
+			this.roomInfo = roomInfo;
+			
+			// room에 따라 JLabel, JButton 생성
+			roomViews = new HashMap<Integer, RoomView>();
+			Set<Integer> roomInfoKeys = roomInfo.keySet();
+			Iterator<Integer> roomInfoIt = roomInfoKeys.iterator();
+			while(roomInfoIt.hasNext()) {
+				int key = roomInfoIt.next();
+				String name = roomInfo.get(key);
+				RoomView roomView = new RoomView(key, name);
+				roomViews.put(key, roomView);
+				
+				add(roomView.name);
+				add(roomView.enter);
+			}
+			
+			setPreferredSize(new Dimension(680, roomInfo.size() * 60));
+		}
+		
+		// RoomView를 다시 그리기 위해 모든 RoomView를 삭제한다.
+		public void clear() {
+			Set<Integer> roomInfoKeys = roomInfo.keySet();
+			Iterator<Integer> roomInfoIt = roomInfoKeys.iterator();
+			while(roomInfoIt.hasNext()) {
+				int key = roomInfoIt.next();
+				System.out.println("CLIENT REMOVE : "+key);
+				RoomView roomView = roomViews.get(key);
+				this.remove(roomView.name);
+				this.remove(roomView.enter);
+			}
+			
+			roomInfo.clear();
+			roomViews.clear();
+			setPreferredSize(new Dimension(680, roomInfo.size() * 60));
+			revalidate();
+		}
+		
+		public boolean addRoom(int key, String name, String status) {
+			try {
+				// Room의 정보를 hashMap (roomInfo, rooms)에 넣는다.
+				RoomView roomView = new RoomView(key, name);
+				roomInfo.put(key, name);
+				roomViews.put(key, roomView);
+				this.add(roomView.name);
+				this.add(roomView.enter);
+				
+				if(!status.equals(AVAIL)) {
+					roomView.enter.setBackground(btnDisable);
+					roomView.enter.setEnabled(false);
+				}
+				
+				setPreferredSize(new Dimension(680, roomInfo.size() * 60));
+				revalidate();
+				return true;
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+				return false;
+			}
+		}
+		
+		public boolean delRoom(GameRoom gameRoom) {
+			try {
+				// Room 객체와 hashmap의 정보들을 제거한다.
+				int key = gameRoom.getKey();
+				roomInfo.remove(key);
+				
+				RoomView roomView = roomViews.get(key);
+				this.remove(roomView.name);
+				this.remove(roomView.enter);
+				
+				setPreferredSize(new Dimension(680, roomInfo.size() * 60));
+				revalidate();
+				return true;
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+				return false;
+			}
+		}
+		
+		public class RoomView{
+			
+			private int key;
+			private JLabel name = new JLabel();
+			private JButton enter = new JButton(" ENTER ");
+
+			public RoomView(int key, String roomName) {
+				this.key = key;
+				name.setText(" [" + key + "] " + roomName);
+				name.setOpaque(true);
+				name.setBackground(Color.WHITE);
+				name.setPreferredSize(new Dimension(560, 50));
+				name.setFont(new Font("맑은 고딕", Font.BOLD, 20));
+				
+				// 추후 인원수도 추가할 예정
+				enter.setOpaque(true);
+				enter.setBackground(btnEnable);
+				enter.setPreferredSize(new Dimension(100, 50));
+				enter.setFont(new Font("Arial", Font.BOLD + Font.ITALIC, 15));
+				enter.addActionListener(new EnterActionListener(key));
+			} // End of RoomView()
+		} // End of class RoomView
+		
+		// RoomListPanel을 위한 btnListener - 통신을 위해 WaitingView에 추가
+		public class EnterActionListener implements ActionListener{
+			private int key;
+			public EnterActionListener(int key) {
+				this.key = key;
+			}
+			public void actionPerformed(ActionEvent e) {
+				SendObject(new ChatMsg(userName, C_ENTROOM, key+""));
+			}
+		} // End of class MouseListener
+	} // End of class RoomListPanel
 }

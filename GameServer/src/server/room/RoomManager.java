@@ -3,6 +3,8 @@ package server.room;
 import java.util.HashMap;
 import java.util.Set;
 
+import data.GameRoom;
+
 public class RoomManager {
 	
 	// Room에 대한 변수 설정
@@ -26,7 +28,7 @@ public class RoomManager {
 		rooms.put(key, room);
 	}
 	
-	public static void delRoom(GameRoom room) {
-		rooms.remove(room);
+	public static void delRoom(GameRoom gameRoom) {
+		rooms.remove(gameRoom);
 	}
 }

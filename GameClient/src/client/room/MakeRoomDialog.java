@@ -1,4 +1,4 @@
-package client.wait;
+package client.room;
 
 import java.awt.Color;
 import java.awt.Dimension;

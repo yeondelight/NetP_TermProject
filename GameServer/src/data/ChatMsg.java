@@ -3,12 +3,14 @@ package data;
 
 import java.io.Serializable;
 import javax.swing.ImageIcon;
+import data.GameRoom;
 
 public class ChatMsg implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private String id;
 	private String code;
 	private String data;
+	private GameRoom room;
 	public ImageIcon img;
 
 	public ChatMsg(String id, String code, String msg) {
@@ -32,6 +34,10 @@ public class ChatMsg implements Serializable {
 	public String getId() {
 		return id;
 	}
+	
+	public GameRoom getGameRoom() {
+		return room;
+	}
 
 	public void setId(String id) {
 		this.id = id;
@@ -43,5 +49,9 @@ public class ChatMsg implements Serializable {
 
 	public void setImg(ImageIcon img) {
 		this.img = img;
+	}
+	
+	public void setRoom(GameRoom room) {
+		this.room = room;
 	}
 }
