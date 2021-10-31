@@ -1,4 +1,5 @@
 package client.wait;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
@@ -10,6 +11,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
@@ -21,16 +24,21 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 
+import data.ChatMsg;
+
 public class WaitingView extends JFrame{
 	
 	// 서버에게 전송하기 위한 코드. 항상 "코드 메세지"의 형태로 전송할것.
+	// 이하 Protocol msg
 	private static final String C_LOGIN = "100";		// 새로운 client 접속
 	private static final String C_ACKLIST = "101";		// C->S 101을 정상적으로 수신
+	private static final String C_MAKEROOM = "200";		// 새로운 방 생성
+	private static final String C_ENTROOM = "201";		// 해당 방에 입장 
+	
 	private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
 	private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
-	private static final String C_MAKEROOM = "200";		// 새로운 방 생성
-	private static final String C_ENTROOM = "201";		// 해당 방에 입장
 	private static final String S_UPDROOM = "210";		// room 목록 update
+	private static final String S_ENTROOM = "220";		// S->C room 입장 허가
 	
 	private static final int BUF_LEN = 128; //  Windows 처럼 BUF_LEN 을 정의
 	private Socket socket; // 연결소켓
@@ -38,6 +46,9 @@ public class WaitingView extends JFrame{
 	private OutputStream os;
 	private DataInputStream dis;
 	private DataOutputStream dos;
+	private ObjectInputStream ois;
+	private ObjectOutputStream oos;
+	
 	private String userName;
 	
 	private Container contentPane;
@@ -61,12 +72,11 @@ public class WaitingView extends JFrame{
 		// client codes
 		try {
 			socket = new Socket(ip_addr, Integer.parseInt(port_no));
-			is = socket.getInputStream();
-			dis = new DataInputStream(is);
-			os = socket.getOutputStream();
-			dos = new DataOutputStream(os);
+			oos = new ObjectOutputStream(socket.getOutputStream());
+			oos.flush();
+			ois = new ObjectInputStream(socket.getInputStream());
 			
-			SendMessage(C_LOGIN + " " + userName);		// 로그인 정보를 서버에게 전송
+			SendObject(new ChatMsg(userName, C_LOGIN, ""));		// 로그인 정보를 서버에게 전송
 			ListenNetwork net = new ListenNetwork();
 			net.start();
 		} catch (NumberFormatException | IOException e) {
@@ -108,9 +118,11 @@ public class WaitingView extends JFrame{
 
 				// make btn을 눌러 return 한 경우
 				String name = makeDialog.getInput();
-				if (name == null)	return;
+				if (name == null) {
+					return;
+				}
 				else{
-					SendMessage(C_MAKEROOM+" "+key+" "+name+" "+userName);
+					SendObject(new ChatMsg(userName, C_MAKEROOM, key+" "+name));
 				}
 			}
 		});
@@ -136,63 +148,75 @@ public class WaitingView extends JFrame{
 		public void run() {
 			while (true) {
 				try {
-					// String msg = dis.readUTF();
-					byte[] b = new byte[BUF_LEN];
-					int ret;
-					ret = dis.read(b);
-					if (ret < 0) {
-						System.out.println("dis.read() < 0 error");
-						try {
-							dos.close();
-							dis.close();
-							socket.close();
-							break;
-						} catch (Exception ee) {
-							break;
-						}// catch문 끝
+					Object obcm = null;
+					String msg = null;
+					ChatMsg cm;
+					try {
+						obcm = ois.readObject();
+					} catch (ClassNotFoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						break;
 					}
-					String	msg = new String(b, "euc-kr");
-					msg = msg.trim(); // 앞뒤 blank NULL, \n 모두 제거
-					System.out.println("Client get : " + msg);
+					if (obcm == null)
+						break;
+					if (obcm instanceof ChatMsg) {
+						cm = (ChatMsg) obcm;
+						msg = String.format("[%s] %s", cm.getId(), cm.getData());
+					} else
+						continue;
 					
-					// words[0] : 코드
-					// words[1] : /to와 같은 cmd
-					// words[2] : /to인 경우 보낼 UserName, 그 외 전송하고자 하는 메세지
-					// 이하 : 전송하고자 하는 메세지
-					String cmds[] = msg.split(" ");
-					
+					// 이하 Protocol 처리
+					String code = cm.getCode();
+					String datas = cm.getData();
+					System.out.println("CLIENT GET DATA : "+code+" "+datas);
+
 					// S_REQLIST(110)
 					// Server -> Client 메세지의 정상 전송을 확인하고 현재 Room의 개수를 보낸다.
-					if(cmds[0].equals(S_REQLIST)) {
-						roomNum = Integer.parseInt(cmds[1]);
-						System.out.println("Client get : "+roomNum);
-						SendMessage(C_ACKLIST+" "+userName);
+					if(code.equals(S_REQLIST)) {
+						roomNum = Integer.parseInt(cm.getData());
+						System.out.println("CLIENT GET ROOMNUM : "+roomNum);
+						SendObject(new ChatMsg(userName, C_ACKLIST, ""));
 					}
-					
+						
 					// S_SENLIST(120)
-					// Server -> Client Room에 대한 정보 (Key, Name)을 보낸다.
-					else if(cmds[0].equals(S_SENLIST)) {
+					// Server -> Client Room에 대한 정보 (Key, Name)를 받는다.
+					else if(code.equals(S_SENLIST)) {
 						// 정보를 받아 client의 HashMap room에 저장한다.
-						int key = Integer.parseInt(cmds[1]);
-						String name = cmds[2];
+						String val[] = cm.getData().split(" ");
+						int key = Integer.parseInt(val[0]);
+						String name = val[1];
+						String status = val[2];
 						rooms.put(key, name);
-						roomListPanel.addRoom(key, name);	// 화면에 보이도록 처리
+						roomListPanel.addRoom(key, name, status);	// 화면에 보이도록 처리
 					}
 					
 					// S_UPDROOM(210)
-					// Server -> Client Room 목록의 변경 감지하고 update 요청
-					else if(cmds[0].equals(S_UPDROOM)) {
-						int key = Integer.parseInt(cmds[1]);
-						String name = cmds[2];
-						makeDialog.setKey(key);				// 해당 key 중복 방지 처리
-						roomListPanel.addRoom(key, name);	// 화면에 보이도록 처리
+					// Server -> Client Room 목록의 변경 감지하고 update 요청	
+					// Client는 현재 roomView를 reset하고 다시 받아온다.
+					else if(code.equals(S_UPDROOM)) {
+						roomListPanel.clear();
+						rooms.clear();
+						roomNum = Integer.parseInt(cm.getData());
+						System.out.println("CLIENT GET ROOMNUM : "+roomNum);
+						SendObject(new ChatMsg(userName, C_ACKLIST, ""));
 					}
+						
+					// S_ENTROOM(220)
+					// Server -> Client 해당 client를 room에 입장하도록 허가.
+					// GameView를 만들고 Room의 정보를 받아 모두 적는다.	
+					else if(code.equals(S_ENTROOM)) {
+						String val[] = cm.getData().split(" ");
+						int key = Integer.parseInt(val[0]);
+						String name = val[1];
+					}
+
 					
 				} catch (IOException e) {
-					System.out.println("dis.read() error");
+					System.out.println("ois.readObject() error");
 					try {
-						dos.close();
-						dis.close();
+						ois.close();
+						oos.close();
 						socket.close();
 						break;
 					} catch (Exception ee) {
@@ -225,22 +249,26 @@ public class WaitingView extends JFrame{
 	// Server에게 network으로 전송
 	public void SendMessage(String msg) {
 		try {
-			// dos.writeUTF(msg);
-			System.out.println("client send : " + msg);
-			byte[] bb;
-			bb = MakePacket(msg);
-			dos.write(bb, 0, bb.length);
+			oos.writeObject(new ChatMsg(userName, "200", msg));
 		} catch (IOException e) {
-			System.out.println("dos.write() error");
+			System.out.println("oos.writeObject() error");
 			try {
-				dos.close();
-				dis.close();
+				ois.close();
+				oos.close();
 				socket.close();
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 				System.exit(0);
 			}
+		}
+	}
+	
+	public void SendObject(Object ob) { // 서버로 메세지를 보내는 메소드
+		try {
+			oos.writeObject(ob);
+		} catch (IOException e) {
+			System.out.println("메세지 송신 에러!!\n");
 		}
 	}
 }

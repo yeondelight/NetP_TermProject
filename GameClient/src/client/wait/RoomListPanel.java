@@ -19,6 +19,15 @@ public class RoomListPanel extends JPanel{
 	private HashMap<Integer, String> roomInfo;		// 방의 ID, 이름을 저장한 HashMap
 	private HashMap<Integer, RoomView> roomViews;	// 해당 방에 해당하는 RoomView를 저장한 HashMap
 	
+	// GameRoom에서의 STATUS 표시
+	private final static String AVAIL = "AVAIL";
+	private final static String FULL = "FULL";
+	private final static String STARTED = "STARTED";
+	
+	// 누를 수 있는 버튼과 그렇지 않은 버튼 구분
+	private Color btnEnable = new Color(180, 210, 255);
+	private Color btnDisable = new Color(200, 200, 200);
+	
 	public RoomListPanel(HashMap<Integer, String> roomInfo) {
 		this.roomInfo = roomInfo;
 		
@@ -39,15 +48,37 @@ public class RoomListPanel extends JPanel{
 		setPreferredSize(new Dimension(680, roomInfo.size() * 60));
 	}
 	
-	public boolean addRoom(int key, String name) {
+	// RoomView를 다시 그리기 위해 모든 RoomView를 삭제한다.
+	public void clear() {
+		Set<Integer> roomInfoKeys = roomInfo.keySet();
+		Iterator<Integer> roomInfoIt = roomInfoKeys.iterator();
+		while(roomInfoIt.hasNext()) {
+			int key = roomInfoIt.next();
+			System.out.println("CLIENT REMOVE : "+key);
+			RoomView roomView = roomViews.get(key);
+			this.remove(roomView.name);
+			this.remove(roomView.enter);
+		}
+		
+		roomInfo.clear();
+		roomViews.clear();
+		setPreferredSize(new Dimension(680, roomInfo.size() * 60));
+		revalidate();
+	}
+	
+	public boolean addRoom(int key, String name, String status) {
 		try {
-			// Room 객체 생성한 뒤 hashMap (roomInfo, rooms)에 넣는다.
-			Room room = new Room(key, name);
+			// Room의 정보를 hashMap (roomInfo, rooms)에 넣는다.
 			RoomView roomView = new RoomView(key, name);
 			roomInfo.put(key, name);
 			roomViews.put(key, roomView);
 			this.add(roomView.name);
 			this.add(roomView.enter);
+			
+			if(!status.equals(AVAIL)) {
+				roomView.enter.setBackground(btnDisable);
+				roomView.enter.setEnabled(false);
+			}
 			
 			setPreferredSize(new Dimension(680, roomInfo.size() * 60));
 			revalidate();
@@ -59,10 +90,10 @@ public class RoomListPanel extends JPanel{
 		}
 	}
 	
-	public boolean delRoom(Room room) {
+	public boolean delRoom(GameRoom gameRoom) {
 		try {
 			// Room 객체와 hashmap의 정보들을 제거한다.
-			int key = room.getKey();
+			int key = gameRoom.getKey();
 			roomInfo.remove(key);
 			
 			RoomView roomView = roomViews.get(key);
@@ -84,11 +115,7 @@ public class RoomListPanel extends JPanel{
 		private int key;
 		private JLabel name = new JLabel();
 		private JButton enter = new JButton(" ENTER ");
-		
-		// 누를 수 있는 버튼과 그렇지 않은 버튼 구분
-		private Color btnEnable = new Color(180, 210, 255);
-		private Color btnDisable = new Color(200, 200, 200);
-		
+
 		public RoomView(int key, String roomName) {
 			this.key = key;
 			name.setText(" [" + key + "] " + roomName);

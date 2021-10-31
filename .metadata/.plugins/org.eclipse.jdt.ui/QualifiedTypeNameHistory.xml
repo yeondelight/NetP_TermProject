@@ -16,4 +16,6 @@
     <fullyQualifiedTypeName name="java.awt.Font"/>
     <fullyQualifiedTypeName name="javax.swing.JScrollPane"/>
     <fullyQualifiedTypeName name="java.awt.EventQueue"/>
+    <fullyQualifiedTypeName name="client.wait.ChatMsg"/>
+    <fullyQualifiedTypeName name="data.ChatMsg"/>
 </qualifiedTypeNameHistroy>
