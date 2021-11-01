@@ -29,7 +29,8 @@ import javax.swing.border.EmptyBorder;
 
 import data.ChatMsg;
 import data.GameRoom;
-import server.room.RoomManager;
+import data.RoomMsg;
+import data.RoomManager;
 
 public class GameServer extends JFrame{
 
@@ -381,7 +382,7 @@ public class GameServer extends JFrame{
 						String name = val[1];
 						GameRoom room = new GameRoom(key, name);
 						roomManager.addRoom(room);
-						WriteOneObject(new ChatMsg(UserName, S_ENTROOM, key+""));
+						WriteOneObject(new RoomMsg(UserName, S_ENTROOM, room));
 						WriteAllObject(new ChatMsg(UserName, S_UPDROOM, roomManager.getSize()+""));
 					}
 					
@@ -391,12 +392,12 @@ public class GameServer extends JFrame{
 					else if (cm.getCode().matches(C_ENTROOM)) {
 						int key = Integer.parseInt(cm.getData());
 						GameRoom room = roomManager.getRoom(key);
-						ChatMsg enter = new ChatMsg(UserName, S_ENTROOM, key+"");
-						//enter.setRoom(room);
-						WriteOneObject(enter);
 						this.enterRoom(room);
 						this.setUserStatus(READYOFF);
-						room.enterUser(this.getClientSocket());
+						room.enterUser(client_socket.toString());
+						RoomMsg enter = new RoomMsg(UserName, S_ENTROOM, room);
+						WriteOneObject(enter);
+						WriteAllObject(new ChatMsg(UserName, S_UPDROOM, roomManager.getSize()+""));		// 입장 후 방의 상태가 변경될 수 있으므로
 					}
 					
 					// exit 처리

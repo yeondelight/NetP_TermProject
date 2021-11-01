@@ -27,9 +27,9 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
-import client.game.GameView;
 import data.ChatMsg;
 import data.GameRoom;
+import data.RoomMsg;
 
 public class WaitingView extends JFrame{
 	
@@ -147,6 +147,11 @@ public class WaitingView extends JFrame{
 		contentPane.setFocusable(true);
 		contentPane.requestFocus();
 	}
+	
+	// Room에서 Server로의 전송을 위해 WaitingView를 넘겨줘야 한다.
+	public WaitingView getWaitingView() {
+		return this;
+	}
 
 	// Server Message를 수신해서 화면에 표시
 	class ListenNetwork extends Thread {
@@ -156,6 +161,7 @@ public class WaitingView extends JFrame{
 					Object obcm = null;
 					String msg = null;
 					ChatMsg cm;
+					RoomMsg rm;
 					try {
 						obcm = ois.readObject();
 					} catch (ClassNotFoundException e) {
@@ -168,61 +174,75 @@ public class WaitingView extends JFrame{
 					if (obcm instanceof ChatMsg) {
 						cm = (ChatMsg) obcm;
 						msg = String.format("[%s] %s", cm.getId(), cm.getData());
-					} else
-						continue;
-					
-					// 이하 Protocol 처리
-					String code = cm.getCode();
-					String datas = cm.getData();
-					System.out.println("CLIENT GET DATA : "+code+" "+datas);
+						
+						String ccode = cm.getCode();
+						String cdata = cm.getData();
+						System.out.println("CLIENT GET DATA : "+ccode+" "+cdata);
+						
+						// 이하 Protocol 처리 - ChatMsg 수신
 
-					// S_REQLIST(110)
-					// Server -> Client 메세지의 정상 전송을 확인하고 현재 Room의 개수를 보낸다.
-					if(code.equals(S_REQLIST)) {
-						roomNum = Integer.parseInt(cm.getData());
-						System.out.println("CLIENT GET ROOMNUM : "+roomNum);
-						SendObject(new ChatMsg(userName, C_ACKLIST, ""));
-					}
+						// S_REQLIST(110)
+						// Server -> Client 메세지의 정상 전송을 확인하고 현재 Room의 개수를 보낸다.
+						if(ccode.equals(S_REQLIST)) {
+							roomNum = Integer.parseInt(cm.getData());
+							System.out.println("CLIENT GET ROOMNUM : "+roomNum);
+							SendObject(new ChatMsg(userName, C_ACKLIST, ""));
+						}
+							
+						// S_SENLIST(120)
+						// Server -> Client Room에 대한 정보 (Key, Name)를 받는다.
+						else if(ccode.equals(S_SENLIST)) {
+							// 정보를 받아 client의 HashMap room에 저장한다.
+							String val[] = cm.getData().split(" ");
+							int key = Integer.parseInt(val[0]);
+							String name = val[1];
+							String status = val[2];
+							rooms.put(key, name);
+							roomListPanel.addRoom(key, name, status);	// 화면에 보이도록 처리
+						}
 						
-					// S_SENLIST(120)
-					// Server -> Client Room에 대한 정보 (Key, Name)를 받는다.
-					else if(code.equals(S_SENLIST)) {
-						// 정보를 받아 client의 HashMap room에 저장한다.
-						String val[] = cm.getData().split(" ");
-						int key = Integer.parseInt(val[0]);
-						String name = val[1];
-						String status = val[2];
-						rooms.put(key, name);
-						roomListPanel.addRoom(key, name, status);	// 화면에 보이도록 처리
+						// S_UPDROOM(210)
+						// Server -> Client Room 목록의 변경 감지하고 update 요청	
+						// Client는 현재 roomView를 reset하고 다시 받아온다.
+						else if(ccode.equals(S_UPDROOM)) {
+							roomListPanel.clear();
+							rooms.clear();
+							roomNum = Integer.parseInt(cm.getData());
+							System.out.println("CLIENT GET ROOMNUM : "+roomNum);
+							SendObject(new ChatMsg(userName, C_ACKLIST, ""));
+						}
 					}
-					
-					// S_UPDROOM(210)
-					// Server -> Client Room 목록의 변경 감지하고 update 요청	
-					// Client는 현재 roomView를 reset하고 다시 받아온다.
-					else if(code.equals(S_UPDROOM)) {
-						roomListPanel.clear();
-						rooms.clear();
-						roomNum = Integer.parseInt(cm.getData());
-						System.out.println("CLIENT GET ROOMNUM : "+roomNum);
-						SendObject(new ChatMsg(userName, C_ACKLIST, ""));
-					}
+					else if (obcm instanceof RoomMsg) {
+						rm = (RoomMsg) obcm;
 						
-					// S_ENTROOM(220)
-					// Server -> Client 해당 client를 room에 입장하도록 허가.
-					// GameView를 만들고 Room의 정보를 받아 모두 적는다.	
-					else if(code.equals(S_ENTROOM)) {
-						int key = Integer.parseInt(cm.getData());
-						new Thread(){
-							public void run() {
-								try {
-									GameView gameView = new GameView();
-									gameView.setVisible(true);
-								} catch (Exception e) {
-									e.printStackTrace();
+						String rcode = rm.getCode();
+						System.out.println("CLIENT GET DATA : "+rcode);
+						
+						// 이하 Protocol 처리 - RoomMsg 수신
+						
+						// S_ENTROOM(220)
+						// Server -> Client 해당 client를 room에 입장하도록 허가.
+						// GameView를 만들고 Room의 정보를 받아 모두 적는다.	
+						if(rcode.equals(S_ENTROOM)) {
+							GameRoom room = rm.getRoom();
+							System.out.println("CLIENT GET ROOM : "+room.getUserList());
+							new Thread(){
+								public void run() {
+									try {
+										// GameRoomView 입장
+										GameRoomView gameRoomView = new GameRoomView(getWaitingView(), room);
+										gameRoomView.setVisible(true);
+										// 현재 WaitingView 퇴장 : 다른 방에 입장하지 못하도록 막음
+										getWaitingView().setVisible(false);
+									} catch (Exception e) {
+										e.printStackTrace();
+									}
 								}
-							}
-						}.run();
+							}.run();
+						}
 					}
+					else
+						continue;
 
 					
 				} catch (IOException e) {

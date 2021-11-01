@@ -3,14 +3,14 @@ package data;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.util.ArrayList;
 
-import server.room.RoomManager;
-
 // 게임방에 대한 정보를 담는 Room
-public class GameRoom {
+// ObjectStream 전송을 위해 몇몇 속성 추가
+public class GameRoom implements Serializable{
 	
 	private final static int MAXPLAYER = 4;
 	private final static String AVAIL = "AVAIL";
@@ -52,7 +52,7 @@ public class GameRoom {
 	}
 	
 	// new player enter
-	public void enterUser(Socket client_socket) {
+	public void enterUser(String client_socket) {
 		if(status!=AVAIL){
 			System.out.println("CANNOT ENTER");
 			return;
@@ -65,7 +65,7 @@ public class GameRoom {
 	}
 	
 	// player exit
-	public void exitUser(Socket client_socket) {
+	public void exitUser(String client_socket) {
 		userList.remove(client_socket);
 		
 		if(userList.size() < 1)
