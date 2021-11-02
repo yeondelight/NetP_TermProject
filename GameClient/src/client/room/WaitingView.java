@@ -19,6 +19,7 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.Vector;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -39,14 +40,17 @@ public class WaitingView extends JFrame{
 	private static final String C_ACKLIST = "101";		// C->S 101을 정상적으로 수신
 	private static final String C_MAKEROOM = "200";		// 새로운 방 생성
 	private static final String C_ENTROOM = "201";		// 해당 방에 입장 
-	private static final String C_CHATMSG = "301";		// GameRoom 내의 일반 Msg
+	private static final String C_CHATMSG = "301";		// C->S GameRoom 내 일반 채팅 메세지
+	private static final String C_UPDROOM = "302";		// C->S GameRoom 업데이트좀
+	private static final String C_ACKROOM = "303";		// C->S 320 ACK
 	
 	private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
 	private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
 	private static final String S_UPDLIST = "210";		// room 목록 update
 	private static final String S_ENTROOM = "220";		// S->C room 입장 허가
-	private static final String S_CHATMSG = "310";		// GameRoom 내의 일반 Msg
-	private static final String S_UPDROOM = "320";		// GameRoom 정보 update
+	private static final String S_CHATMSG = "310";		// S->C GameRoom 내 방송
+	private static final String S_UPDROOM = "320";		// GameRoom 정보 update : user 수 반환
+	private static final String S_USRLIST = "330";		// userList update
 	
 	private static final int BUF_LEN = 128; //  Windows 처럼 BUF_LEN 을 정의
 	private Socket socket; // 연결소켓
@@ -64,6 +68,7 @@ public class WaitingView extends JFrame{
 	private RoomListPanel roomListPanel;
 	private MakeRoomDialog makeDialog;
 
+	private GameRoom gameRoom;
 	private GameRoomView gameRoomView;		// 추후 User가 입장할 GameRoom
 	private HashMap<Integer, String> rooms;
 	private int roomNum = 0;
@@ -210,7 +215,7 @@ public class WaitingView extends JFrame{
 							roomListPanel.addRoom(key, name, status, pNum);	// 화면에 보이도록 처리
 						}
 						
-						// S_UPDROOM(210)
+						// S_UPDLIST(210)
 						// Server -> Client Room 목록의 변경 감지하고 update 요청	
 						// Client는 현재 roomView를 reset하고 다시 받아온다.
 						else if(ccode.equals(S_UPDLIST)) {
@@ -226,15 +231,35 @@ public class WaitingView extends JFrame{
 						else if(ccode.equals(S_CHATMSG)) {
 							gameRoomView.AppendText("[" + cm.getId() + "] " + cm.getData());
 						}
+						
+						// S_UPDROOM(320)
+						// Server -> Client update 해줄게
+						// userList의 size를 받아온다.
+						else if (ccode.equals(S_UPDROOM)) {
+							int userNum = Integer.parseInt(cm.getData());
+							int key = gameRoom.getKey();
+							gameRoomView.clear();
+							SendObject(new ChatMsg(userName, C_ACKROOM, key+""));
+						}
+						
+						// S_USRLIST(330)
+						// Server -> Client userList update
+						else if (ccode.equals(S_USRLIST)) {
+							String val[] = cm.getData().split(" ");
+							String name = val[0];
+							String status = val[1];
+							gameRoomView.addUser(name, status);
+							System.out.println("CLIENT GOT USRLIST : "+name+" "+status);
+						}
 					}
 					else if (obcm instanceof RoomMsg) {
 						rm = (RoomMsg) obcm;
 						
 						String rcode = rm.getCode();
-						GameRoom room = rm.getRoom();
+						gameRoom = rm.getRoom();
 						
 						System.out.println("CLIENT CODE : "+rcode);
-						System.out.println("CLIENT TEST : "+room.getUserList());
+						System.out.println("CLIENT TEST : "+gameRoom.getUserList());
 						
 						// 이하 Protocol 처리 - RoomMsg 수신
 						
@@ -242,26 +267,11 @@ public class WaitingView extends JFrame{
 						// Server -> Client 해당 client를 room에 입장하도록 허가.
 						// GameView를 만들고 Room의 정보를 받아 모두 적는다.	
 						if(rcode.equals(S_ENTROOM)) {
-							new Thread(){
-								public void run() {
-									try {
-										// GameRoomView 입장
-										gameRoomView = new GameRoomView(getWaitingView(), room);
-										gameRoomView.setVisible(true);
-										// 현재 WaitingView 퇴장 : 다른 방에 입장하지 못하도록 막음
-										getWaitingView().setVisible(false);
-									} catch (Exception e) {
-										e.printStackTrace();
-									}
-								}
-							}.run();
-						}
-						
-						// S_UPDROOM(320)
-						// Server -> Client 해당 GameRoom의 정보가 변경되었으므로 다시그려라
-						// GameRoom의 update() 호출
-						else if (rcode.equals(S_UPDROOM)) {
-							gameRoomView.update(room);
+							// GameRoomView 입장
+							gameRoomView = new GameRoomView(getWaitingView(), gameRoom);
+							gameRoomView.setVisible(true);
+							SendObject(new ChatMsg(userName, C_UPDROOM, gameRoom.getKey()+""));		// 업데이트좀
+							getWaitingView().setVisible(false);			// 현재 WaitingView 퇴장 : 다른 방에 입장하지 못하도록 막음
 						}
 					}
 					else

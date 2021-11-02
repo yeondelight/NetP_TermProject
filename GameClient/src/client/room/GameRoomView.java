@@ -19,6 +19,13 @@ import data.GameRoom;
 
 public class GameRoomView extends JFrame{
 	
+	// 이하 userStatus 처리를 위한 변수
+	private static final String ONLINE = "ONLINE";
+	private static final String SLEEP = "SLEEP";
+	private static final String READYON = "READYON";
+	private static final String READYOFF = "READYOFF";
+	private static final String GAME = "GAME";
+	
 	private WaitingView parent;
 	private GameRoom room;
 	
@@ -28,15 +35,17 @@ public class GameRoomView extends JFrame{
 	private JTextArea textArea;
 	private JButton btnSend;
 	
-	private JButton[] btnReady = new JButton[4];
-	private Vector userList;
+	private String myName;
+	private Vector<String> userList = new Vector<String>();
+	private Vector<JButton> readyBtn = new Vector<JButton>();
 	
 	private Color btnEnable = new Color(180, 210, 255);
 	private Color btnDisable = new Color(200, 200, 200);
-	
+
 	public GameRoomView(WaitingView parent, GameRoom room) {
 		this.parent = parent;
 		this.room = room;
+		myName = parent.getMyName();
 		
 		// 기본 설정
 		setTitle("Network MAZE Game - " + "[#" + room.getKey() + "] "+room.getName());
@@ -73,25 +82,25 @@ public class GameRoomView extends JFrame{
 		btnSend.setBounds(140, 420, 70, 30);
 		contentPane.add(btnSend);
 		
+		// ReadyBtn 설정
+		userList = room.getUserList();
+		for (int i = 0; i < userList.size(); i++) {
+			String userName = userList.get(i).toString();
+			JButton ready = new JButton(userName);
+			ready.setOpaque(true);
+			ready.setBackground(btnDisable);
+			ready.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 20));
+			ready.setBounds(220 + 165*i, 50, 160, 400);
+			if(!userName.equals(myName))
+				ready.setEnabled(false);
+			contentPane.add(ready);
+			readyBtn.add(ready);
+		}
+		
+		// Event Listener 설정
 		TextSendAction action = new TextSendAction();
 		btnSend.addActionListener(action);
 		txtInput.addActionListener(action);
-		
-		// 초기 화면 - Ready창 띄우기
-		userList = room.getUserList();
-		System.out.println(userList.size());
-		for (int i = 0; i < userList.size(); i++) {
-			String me = parent.getMyName();
-			btnReady[i] = new JButton(userList.get(i).toString());
-			btnReady[i].setOpaque(true);
-			btnReady[i].setBackground(btnDisable);
-			btnReady[i].setFont(new Font("맑은 고딕", Font.BOLD, 20));
-			btnReady[i].setBounds(220 + 165*i, 45, 160, 400);
-			if(!userList.get(i).equals(me)) {
-				btnReady[i].setEnabled(false);
-			}
-			contentPane.add(btnReady[i]);
-		}
 
 		// Frame 크기 설정
 		setSize(900, 500);
@@ -104,10 +113,33 @@ public class GameRoomView extends JFrame{
 	}
 	
 	// Server로부터 Room의 변경사항을 받은 경우, revalidate()로 업데이트
-	public void update(GameRoom room) {
-		this.room = room;
-		System.out.println(room.getUserList());
-		revalidate();
+	public void clear() {
+		for (int i = 0; i < readyBtn.size(); i++) {
+			contentPane.remove(readyBtn.get(i));
+		}
+		readyBtn.clear();
+		userList.clear();
+		contentPane.revalidate();
+		contentPane.repaint();
+	}
+	
+	public void addUser(String name, String status) {
+		JButton ready = new JButton(name);
+		ready.setOpaque(true);
+		if(status.equals(READYON))
+			ready.setBackground(btnEnable);
+		else
+			ready.setBackground(btnDisable);
+		ready.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 20));
+		ready.setBounds(220 + 165*readyBtn.size(), 50, 160, 400);
+		
+		if(!name.equals(myName))
+			ready.setEnabled(false);
+		contentPane.add(ready);
+		userList.add(name);
+		readyBtn.add(ready);
+		contentPane.repaint();
+		contentPane.revalidate();
 	}
 	
 	// 화면에 출력
