@@ -34,7 +34,6 @@ import data.RoomMsg;
 
 public class WaitingView extends JFrame{
 	
-	// 서버에게 전송하기 위한 코드. 항상 "코드 메세지"의 형태로 전송할것.
 	// 이하 Protocol msg
 	private static final String C_LOGIN = "100";		// 새로운 client 접속
 	private static final String C_ACKLIST = "101";		// C->S 101을 정상적으로 수신
@@ -43,6 +42,7 @@ public class WaitingView extends JFrame{
 	private static final String C_CHATMSG = "301";		// C->S GameRoom 내 일반 채팅 메세지
 	private static final String C_UPDROOM = "302";		// C->S GameRoom 업데이트좀
 	private static final String C_ACKROOM = "303";		// C->S 320 ACK
+	private static final String C_STRGAME = "304";		// C->S 게임 시작할래
 	
 	private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
 	private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
@@ -51,6 +51,7 @@ public class WaitingView extends JFrame{
 	private static final String S_CHATMSG = "310";		// S->C GameRoom 내 방송
 	private static final String S_UPDROOM = "320";		// GameRoom 정보 update : user 수 반환
 	private static final String S_USRLIST = "330";		// userList update
+	private static final String S_STRGAME = "340";		// S->C 그래 시작해
 	
 	private static final int BUF_LEN = 128; //  Windows 처럼 BUF_LEN 을 정의
 	private Socket socket; // 연결소켓
@@ -197,8 +198,8 @@ public class WaitingView extends JFrame{
 						// S_REQLIST(110)
 						// Server -> Client 메세지의 정상 전송을 확인하고 현재 Room의 개수를 보낸다.
 						if(ccode.equals(S_REQLIST)) {
+							userName = cm.getId();			//중복 닉네임인 경우 다시 받아야 하므로
 							roomNum = Integer.parseInt(cm.getData());
-							System.out.println("CLIENT GET ROOMNUM : "+roomNum);
 							SendObject(new ChatMsg(userName, C_ACKLIST, ""));
 						}
 							
@@ -222,7 +223,6 @@ public class WaitingView extends JFrame{
 							roomListPanel.clear();
 							rooms.clear();
 							roomNum = Integer.parseInt(cm.getData());
-							System.out.println("CLIENT GET ROOMNUM : "+roomNum);
 							SendObject(new ChatMsg(userName, C_ACKLIST, ""));
 						}
 						
@@ -249,8 +249,14 @@ public class WaitingView extends JFrame{
 							String name = val[0];
 							String status = val[1];
 							gameRoomView.addUser(name, status);
-							System.out.println("CLIENT GOT USRLIST : "+name+" "+status);
 						}
+						
+						// S_STRGAME(340)
+						// Server -> Client 게임 시작 허가
+						else if (ccode.equals(S_STRGAME)) {
+							gameRoomView.startGame();
+						}
+						
 					}
 					else if (obcm instanceof RoomMsg) {
 						rm = (RoomMsg) obcm;
@@ -259,7 +265,6 @@ public class WaitingView extends JFrame{
 						gameRoom = rm.getRoom();
 						
 						System.out.println("CLIENT CODE : "+rcode);
-						System.out.println("CLIENT TEST : "+gameRoom.getUserList());
 						
 						// 이하 Protocol 처리 - RoomMsg 수신
 						

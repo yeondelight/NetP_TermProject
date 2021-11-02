@@ -23,4 +23,6 @@
     <fullyQualifiedTypeName name="java.awt.Container"/>
     <fullyQualifiedTypeName name="java.awt.Dimension"/>
     <fullyQualifiedTypeName name="data.RoomMsg"/>
+    <fullyQualifiedTypeName name="sun.jvm.hotspot.debugger.win32.coff.TestDebugInfo"/>
+    <fullyQualifiedTypeName name="java.util.Vector"/>
 </qualifiedTypeNameHistroy>

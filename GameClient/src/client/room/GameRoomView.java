@@ -15,6 +15,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
+import data.ChatMsg;
 import data.GameRoom;
 
 public class GameRoomView extends JFrame{
@@ -26,18 +27,28 @@ public class GameRoomView extends JFrame{
 	private static final String READYOFF = "READYOFF";
 	private static final String GAME = "GAME";
 	
+	private static final String C_UPDROOM = "302";
+	private static final String C_STRGAME = "304";
+	
 	private WaitingView parent;
 	private GameRoom room;
-	
+
 	private Container contentPane;
 	private JLabel roomTitle;
+	
 	private JTextField txtInput;
 	private JTextArea textArea;
 	private JButton btnSend;
+	private JButton startBtn;
 	
 	private String myName;
+	
 	private Vector<String> userList = new Vector<String>();
+	private Vector<String> btnStatus = new Vector<String>();
 	private Vector<JButton> readyBtn = new Vector<JButton>();
+	
+	private boolean isPressed = false;
+	
 	
 	private Color btnEnable = new Color(180, 210, 255);
 	private Color btnDisable = new Color(200, 200, 200);
@@ -61,8 +72,16 @@ public class GameRoomView extends JFrame{
 		roomTitle.setFont(new Font("맑은 고딕", Font.BOLD, 15));
 		contentPane.add(roomTitle);
 		
+		startBtn = new JButton("START");
+		startBtn.setOpaque(true);
+		startBtn.setBackground(btnDisable);
+		startBtn.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 12));
+		startBtn.setBounds(10, 45, 200, 30);
+		startBtn.setEnabled(false);
+		contentPane.add(startBtn);
+		
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(10, 45, 200, 375);
+		scrollPane.setBounds(10, 75, 200, 345);
 		contentPane.add(scrollPane);
 
 		textArea = new JTextArea();
@@ -75,7 +94,7 @@ public class GameRoomView extends JFrame{
 		contentPane.add(txtInput);
 		txtInput.setColumns(10);
 
-		btnSend = new JButton("Send");
+		btnSend = new JButton("SEND");
 		btnSend.setOpaque(true);
 		btnSend.setBackground(btnEnable);
 		btnSend.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 12));
@@ -93,6 +112,7 @@ public class GameRoomView extends JFrame{
 			ready.setBounds(220 + 165*i, 50, 160, 400);
 			if(!userName.equals(myName))
 				ready.setEnabled(false);
+			ready.addActionListener(new ReadyActionListener(room.getKey()));
 			contentPane.add(ready);
 			readyBtn.add(ready);
 		}
@@ -101,6 +121,7 @@ public class GameRoomView extends JFrame{
 		TextSendAction action = new TextSendAction();
 		btnSend.addActionListener(action);
 		txtInput.addActionListener(action);
+		startBtn.addActionListener(new StartActionListener(room.getKey()));
 
 		// Frame 크기 설정
 		setSize(900, 500);
@@ -112,17 +133,19 @@ public class GameRoomView extends JFrame{
 		contentPane.requestFocus();
 	}
 	
-	// Server로부터 Room의 변경사항을 받은 경우, revalidate()로 업데이트
+	// Server로부터 Room의 변경사항을 받은 경우, revalidate(), repaint()로 업데이트
 	public void clear() {
 		for (int i = 0; i < readyBtn.size(); i++) {
 			contentPane.remove(readyBtn.get(i));
 		}
 		readyBtn.clear();
 		userList.clear();
+		btnStatus.clear();
 		contentPane.revalidate();
 		contentPane.repaint();
 	}
 	
+	// 새로운 User 추가
 	public void addUser(String name, String status) {
 		JButton ready = new JButton(name);
 		ready.setOpaque(true);
@@ -135,14 +158,34 @@ public class GameRoomView extends JFrame{
 		
 		if(!name.equals(myName))
 			ready.setEnabled(false);
+		else
+			ready.addActionListener(new ReadyActionListener(room.getKey()));
+
+		// startBtn 활성화 체크
+		int i = 0;
+		for (i = 0; i < btnStatus.size(); i++) {
+			if (!btnStatus.get(i).equals(READYON))
+				break;
+		}
+		if (i==btnStatus.size() && status.equals(READYON)) {
+			startBtn.setEnabled(true);
+			startBtn.setBackground(new Color(240, 200, 200));
+		}
+		else {
+			startBtn.setEnabled(false);
+			startBtn.setBackground(btnDisable);
+		}
+			
 		contentPane.add(ready);
 		userList.add(name);
 		readyBtn.add(ready);
+		btnStatus.add(status);
+		
 		contentPane.repaint();
 		contentPane.revalidate();
 	}
 	
-	// 화면에 출력
+	// 화면에 출력 - Chatting
 	public void AppendText(String msg) {
 		textArea.append(msg + "\n");
 		msg = msg.trim(); // 앞뒤 blank와 \n을 제거한다.
@@ -150,6 +193,12 @@ public class GameRoomView extends JFrame{
 		// 끝으로 이동
 		//textArea.setCaretPosition(len);
 		//textArea.replaceSelection(msg + "\n");
+	}
+	
+	// 게임 시작
+	public void startGame() {
+		startBtn.setEnabled(false);
+		System.out.println("CLIENT "+myName+" GAME STARTED");
 	}
 	
 	// keyboard enter key 치면 서버로 전송
@@ -168,4 +217,27 @@ public class GameRoomView extends JFrame{
 			}
 		}
 	}
+	
+	// ReadyBtn을 위한 EventListener - 버튼을 누르면 ready 상태를 바꾸고 server에 update 요청
+	public class ReadyActionListener implements ActionListener{
+		private int key;
+		public ReadyActionListener(int key) {
+			this.key = key;
+		}
+		public void actionPerformed(ActionEvent e) {
+			isPressed = !isPressed;
+			parent.SendObject(new ChatMsg(myName, C_UPDROOM, key+" "+isPressed));
+		}
+	} // End of class ReadyActionListener
+	
+	// StartBtn을 위한 EventListener - 버튼을 누르면 ready 상태를 체크하고 Game start
+	public class StartActionListener implements ActionListener{
+		private int key;
+		public StartActionListener(int key) {
+			this.key = key;
+		}
+		public void actionPerformed(ActionEvent e) {
+			parent.SendObject(new ChatMsg(myName, C_STRGAME, key+""));
+		}
+	} // End of class ReadyActionListener
 }

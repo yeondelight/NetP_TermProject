@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
-		<item key="selection" value=""/>
+		<item key="selection" value="Login"/>
 		<item key="wrap" value="true"/>
 		<item key="casesensitive" value="false"/>
 		<item key="wholeword" value="false"/>
 		<item key="incremental" value="false"/>
 		<item key="isRegEx" value="false"/>
 		<list key="findhistory">
+			<item value="Login"/>
+			<item value="login()"/>
+			<item value="Login()"/>
+			<item value="Action"/>
+			<item value="status"/>
+			<item value="210"/>
 			<item value="exitUser"/>
 			<item value="220"/>
 			<item value="220\"/>
@@ -17,22 +23,16 @@
 			<item value="UserName"/>
 			<item value="WriteOneObject"/>
 			<item value="Protocol"/>
-			<item value="enterRoom"/>
-			<item value="&quot;O&quot;"/>
-			<item value="WriteAllO"/>
-			<item value="Client get"/>
-			<item value="new ChatMsg"/>
-			<item value="room"/>
 		</list>
 		<list key="replacehistory">
 			<item value="num"/>
 		</list>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
-		<item key="DIALOG_X_ORIGIN" value="1050"/>
-		<item key="DIALOG_Y_ORIGIN" value="210"/>
-		<item key="DIALOG_WIDTH" value="288"/>
-		<item key="DIALOG_HEIGHT" value="391"/>
+		<item key="DIALOG_X_ORIGIN" value="1600"/>
+		<item key="DIALOG_Y_ORIGIN" value="498"/>
+		<item key="DIALOG_WIDTH" value="250"/>
+		<item key="DIALOG_HEIGHT" value="403"/>
 		<item key="DIALOG_FONT_NAME" value="1|맑은 고딕|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|맑은 고딕"/>
 	</section>
 </section>
