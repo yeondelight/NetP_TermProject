@@ -39,11 +39,14 @@ public class WaitingView extends JFrame{
 	private static final String C_ACKLIST = "101";		// C->S 101을 정상적으로 수신
 	private static final String C_MAKEROOM = "200";		// 새로운 방 생성
 	private static final String C_ENTROOM = "201";		// 해당 방에 입장 
+	private static final String C_CHATMSG = "301";		// GameRoom 내의 일반 Msg
 	
 	private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
 	private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
-	private static final String S_UPDROOM = "210";		// room 목록 update
+	private static final String S_UPDLIST = "210";		// room 목록 update
 	private static final String S_ENTROOM = "220";		// S->C room 입장 허가
+	private static final String S_CHATMSG = "310";		// GameRoom 내의 일반 Msg
+	private static final String S_UPDROOM = "320";		// GameRoom 정보 update
 	
 	private static final int BUF_LEN = 128; //  Windows 처럼 BUF_LEN 을 정의
 	private Socket socket; // 연결소켓
@@ -61,6 +64,7 @@ public class WaitingView extends JFrame{
 	private RoomListPanel roomListPanel;
 	private MakeRoomDialog makeDialog;
 
+	private GameRoomView gameRoomView;		// 추후 User가 입장할 GameRoom
 	private HashMap<Integer, String> rooms;
 	private int roomNum = 0;
 	
@@ -152,6 +156,10 @@ public class WaitingView extends JFrame{
 	public WaitingView getWaitingView() {
 		return this;
 	}
+	
+	public String getMyName() {
+		return userName;
+	}
 
 	// Server Message를 수신해서 화면에 표시
 	class ListenNetwork extends Thread {
@@ -197,26 +205,36 @@ public class WaitingView extends JFrame{
 							int key = Integer.parseInt(val[0]);
 							String name = val[1];
 							String status = val[2];
+							int pNum = Integer.parseInt(val[3]);
 							rooms.put(key, name);
-							roomListPanel.addRoom(key, name, status);	// 화면에 보이도록 처리
+							roomListPanel.addRoom(key, name, status, pNum);	// 화면에 보이도록 처리
 						}
 						
 						// S_UPDROOM(210)
 						// Server -> Client Room 목록의 변경 감지하고 update 요청	
 						// Client는 현재 roomView를 reset하고 다시 받아온다.
-						else if(ccode.equals(S_UPDROOM)) {
+						else if(ccode.equals(S_UPDLIST)) {
 							roomListPanel.clear();
 							rooms.clear();
 							roomNum = Integer.parseInt(cm.getData());
 							System.out.println("CLIENT GET ROOMNUM : "+roomNum);
 							SendObject(new ChatMsg(userName, C_ACKLIST, ""));
 						}
+						
+						// S_CHATMSG(310)
+						// Server -> Client GameRoom 내의 User가 보낸 메세지 수신
+						else if(ccode.equals(S_CHATMSG)) {
+							gameRoomView.AppendText("[" + cm.getId() + "] " + cm.getData());
+						}
 					}
 					else if (obcm instanceof RoomMsg) {
 						rm = (RoomMsg) obcm;
 						
 						String rcode = rm.getCode();
-						System.out.println("CLIENT GET DATA : "+rcode);
+						GameRoom room = rm.getRoom();
+						
+						System.out.println("CLIENT CODE : "+rcode);
+						System.out.println("CLIENT TEST : "+room.getUserList());
 						
 						// 이하 Protocol 처리 - RoomMsg 수신
 						
@@ -224,13 +242,11 @@ public class WaitingView extends JFrame{
 						// Server -> Client 해당 client를 room에 입장하도록 허가.
 						// GameView를 만들고 Room의 정보를 받아 모두 적는다.	
 						if(rcode.equals(S_ENTROOM)) {
-							GameRoom room = rm.getRoom();
-							System.out.println("CLIENT GET ROOM : "+room.getUserList());
 							new Thread(){
 								public void run() {
 									try {
 										// GameRoomView 입장
-										GameRoomView gameRoomView = new GameRoomView(getWaitingView(), room);
+										gameRoomView = new GameRoomView(getWaitingView(), room);
 										gameRoomView.setVisible(true);
 										// 현재 WaitingView 퇴장 : 다른 방에 입장하지 못하도록 막음
 										getWaitingView().setVisible(false);
@@ -239,6 +255,13 @@ public class WaitingView extends JFrame{
 									}
 								}
 							}.run();
+						}
+						
+						// S_UPDROOM(320)
+						// Server -> Client 해당 GameRoom의 정보가 변경되었으므로 다시그려라
+						// GameRoom의 update() 호출
+						else if (rcode.equals(S_UPDROOM)) {
+							gameRoomView.update(room);
 						}
 					}
 					else
@@ -280,9 +303,9 @@ public class WaitingView extends JFrame{
 	} // End of MakePacket(msg)
 
 	// Server에게 network으로 전송
-	public void SendMessage(String msg) {
+	public void SendMessage(int key, String msg) {
 		try {
-			oos.writeObject(new ChatMsg(userName, "200", msg));
+			oos.writeObject(new ChatMsg(userName, C_CHATMSG, key + " " + msg));
 		} catch (IOException e) {
 			System.out.println("oos.writeObject() error");
 			try {
@@ -320,6 +343,15 @@ public class WaitingView extends JFrame{
 		// 누를 수 있는 버튼과 그렇지 않은 버튼 구분
 		private Color btnEnable = new Color(180, 210, 255);
 		private Color btnDisable = new Color(200, 200, 200);
+		
+		// 인원수를 표시하는 View는 Image로 처리
+		private ImageIcon pEnable0 = new ImageIcon("res/player/pEnable0.jpg");
+		private ImageIcon pEnable1 = new ImageIcon("res/player/pEnable1.jpg");
+		private ImageIcon pEnable2 = new ImageIcon("res/player/pEnable2.jpg");
+		private ImageIcon pEnable3 = new ImageIcon("res/player/pEnable3.jpg");
+		private ImageIcon pDisable2 = new ImageIcon("res/player/pDisable2.jpg");
+		private ImageIcon pDisable3 = new ImageIcon("res/player/pDisable3.jpg");
+		private ImageIcon pDisable4 = new ImageIcon("res/player/pDisable4.jpg");
 			
 		public RoomListPanel(HashMap<Integer, String> roomInfo) {
 			this.roomInfo = roomInfo;
@@ -335,6 +367,7 @@ public class WaitingView extends JFrame{
 				roomViews.put(key, roomView);
 				
 				add(roomView.name);
+				add(roomView.pNum);
 				add(roomView.enter);
 			}
 			
@@ -350,6 +383,7 @@ public class WaitingView extends JFrame{
 				System.out.println("CLIENT REMOVE : "+key);
 				RoomView roomView = roomViews.get(key);
 				this.remove(roomView.name);
+				this.remove(roomView.pNum);
 				this.remove(roomView.enter);
 			}
 			
@@ -359,18 +393,47 @@ public class WaitingView extends JFrame{
 			revalidate();
 		}
 		
-		public boolean addRoom(int key, String name, String status) {
+		public boolean addRoom(int key, String name, String status, int pNum) {
 			try {
 				// Room의 정보를 hashMap (roomInfo, rooms)에 넣는다.
 				RoomView roomView = new RoomView(key, name);
 				roomInfo.put(key, name);
 				roomViews.put(key, roomView);
 				this.add(roomView.name);
+				this.add(roomView.pNum);
 				this.add(roomView.enter);
 				
+				switch(pNum) {
+				case 0:
+					roomView.pNum.setIcon(pEnable0);
+					break;
+				case 1:
+					roomView.pNum.setIcon(pEnable1);
+					break;
+				case 2:
+					roomView.pNum.setIcon(pEnable2);
+					break;
+				case 3:
+					roomView.pNum.setIcon(pEnable3);
+					break;
+				}
+				
 				if(!status.equals(AVAIL)) {
+					roomView.name.setForeground(btnDisable);
 					roomView.enter.setBackground(btnDisable);
 					roomView.enter.setEnabled(false);
+					
+					switch(pNum) {
+					case 2:
+						roomView.pNum.setIcon(pDisable2);
+						break;
+					case 3:
+						roomView.pNum.setIcon(pDisable3);
+						break;
+					case 4:
+						roomView.pNum.setIcon(pDisable4);
+						break;
+					}
 				}
 				
 				setPreferredSize(new Dimension(680, roomInfo.size() * 60));
@@ -391,6 +454,7 @@ public class WaitingView extends JFrame{
 				
 				RoomView roomView = roomViews.get(key);
 				this.remove(roomView.name);
+				this.remove(roomView.pNum);
 				this.remove(roomView.enter);
 				
 				setPreferredSize(new Dimension(680, roomInfo.size() * 60));
@@ -407,6 +471,7 @@ public class WaitingView extends JFrame{
 			
 			private int key;
 			private JLabel name = new JLabel();
+			private JLabel pNum = new JLabel();
 			private JButton enter = new JButton(" ENTER ");
 
 			public RoomView(int key, String roomName) {
@@ -414,10 +479,11 @@ public class WaitingView extends JFrame{
 				name.setText(" [" + key + "] " + roomName);
 				name.setOpaque(true);
 				name.setBackground(Color.WHITE);
-				name.setPreferredSize(new Dimension(560, 50));
+				name.setPreferredSize(new Dimension(480, 50));
 				name.setFont(new Font("맑은 고딕", Font.BOLD, 20));
+
+				pNum.setPreferredSize(new Dimension(80, 50));
 				
-				// 추후 인원수도 추가할 예정
 				enter.setOpaque(true);
 				enter.setBackground(btnEnable);
 				enter.setPreferredSize(new Dimension(100, 50));

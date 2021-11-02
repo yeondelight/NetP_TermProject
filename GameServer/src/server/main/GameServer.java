@@ -30,7 +30,6 @@ import javax.swing.border.EmptyBorder;
 import data.ChatMsg;
 import data.GameRoom;
 import data.RoomMsg;
-import data.RoomManager;
 
 public class GameServer extends JFrame{
 
@@ -168,11 +167,14 @@ public class GameServer extends JFrame{
 		private static final String C_ACKLIST = "101";		// C->S 101을 정상적으로 수신
 		private static final String C_MAKEROOM = "200";		// 새로운 방 생성
 		private static final String C_ENTROOM = "201";		// 해당 방에 입장 
+		private static final String C_CHATMSG = "301";		// C->S GameRoom 내 일반 채팅 메세지
 		
 		private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
 		private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
-		private static final String S_UPDROOM = "210";		// room 목록 update
+		private static final String S_UPDLIST = "210";		// room 목록 update
 		private static final String S_ENTROOM = "220";		// S->C room 입장 허가
+		private static final String S_CHATMSG = "310";		// S->C GameRoom 내 방송
+		private static final String S_UPDROOM = "320";		// GameRoom 정보 update
 		
 		public String getUserName() {
 			return UserName;
@@ -247,6 +249,21 @@ public class GameServer extends JFrame{
 			}
 		}
 
+		// 내가 속한 GameRoom의 다른 User들에게 전송. 각 GameRoom Thread의 WriteOne()을 호출한다.
+		public void WriteRoomObject(int key, Object ob) {
+			GameRoom room = roomManager.getRoom(key);
+			Vector userList = room.getUserList();
+			for(int i = 0; i < user_vc.size(); i++) {
+				UserService user = (UserService) user_vc.elementAt(i);
+				for (int j = 0; j < userList.size(); j++) {
+					if(user.UserName.equals(userList.get(j))) {
+						System.out.println(user.UserName+"에게 전송 : "+userList);
+						user.WriteOneObject(ob);
+					}
+				}
+			}
+		}
+		
 		// Windows 처럼 message 제외한 나머지 부분은 NULL 로 만들기 위한 함수
 		public byte[] MakePacket(String msg) {
 			byte[] packet = new byte[BUF_LEN];
@@ -307,22 +324,6 @@ public class GameServer extends JFrame{
 			}
 		}
 		
-		// GameRoom에 있는 User들에게만 전송
-		public void WriteRoom(String msg) {
-			ArrayList userList = gameRoom.getUserList();
-			
-			for (int i = 0; i < userList.size(); i++) {
-				Socket s = (Socket) userList.get(i);
-				for (int j = 0; j < user_vc.size(); j++) {
-					UserService user = (UserService) user_vc.get(j);
-					if(user.getClientSocket() == s) {
-						// status를 보고 제외할 참가자 설정 필요
-						user.WriteOne(msg);
-					}
-				}
-			}
-		}
-		
 		// GameRoom 입장 처리
 		public void enterRoom(GameRoom gameRoom) {
 			this.gameRoom = gameRoom;
@@ -355,6 +356,7 @@ public class GameServer extends JFrame{
 					// C_LOGIN(100)
 					if(cm.getCode().matches(C_LOGIN)) {
 						System.out.println("SERVER :: Login SUCCESS");
+						UserName = cm.getId();
 						AppendObject(cm);
 					}
 					
@@ -368,7 +370,8 @@ public class GameServer extends JFrame{
 							int key = roomKeysIt.next();
 							String name = roomManager.getRoom(key).getName();
 							String status = roomManager.getRoom(key).getStatus();
-							WriteOneObject(new ChatMsg(UserName, S_SENLIST, key+" "+name+" "+status));
+							int players = roomManager.getRoom(key).getUserList().size();
+							WriteOneObject(new ChatMsg(UserName, S_SENLIST, key+" "+name+" "+status+" "+players));
 						}
 					}
 					
@@ -383,7 +386,7 @@ public class GameServer extends JFrame{
 						GameRoom room = new GameRoom(key, name);
 						roomManager.addRoom(room);
 						WriteOneObject(new RoomMsg(UserName, S_ENTROOM, room));
-						WriteAllObject(new ChatMsg(UserName, S_UPDROOM, roomManager.getSize()+""));
+						WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));
 					}
 					
 					// C_ENTROOM(201)
@@ -394,10 +397,25 @@ public class GameServer extends JFrame{
 						GameRoom room = roomManager.getRoom(key);
 						this.enterRoom(room);
 						this.setUserStatus(READYOFF);
-						room.enterUser(client_socket.toString());
+						room.enterUser(UserName);
 						RoomMsg enter = new RoomMsg(UserName, S_ENTROOM, room);
 						WriteOneObject(enter);
-						WriteAllObject(new ChatMsg(UserName, S_UPDROOM, roomManager.getSize()+""));		// 입장 후 방의 상태가 변경될 수 있으므로
+						RoomMsg update = new RoomMsg(UserName, S_UPDROOM, room);
+						WriteRoomObject(key, update);
+						WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));		// 입장 후 방의 상태가 변경될 수 있으므로
+					}
+					
+					// C_CHATMSG(301)
+					// Client -> Server 방 내에서의 일반 채팅
+					// 방 내의 Client들에게 방송 (S_CHATMSG)
+					else if (cm.getCode().matches(C_CHATMSG)) {
+						String val[] = cm.getData().split(" ");
+						int key = Integer.parseInt(val[0]);
+						String chatMsg = val[1];
+						for (int i = 2; i < val.length; i++) {
+							chatMsg += (" "+val[i]);
+						}
+						WriteRoomObject(key, new ChatMsg(UserName, S_CHATMSG, chatMsg));
 					}
 					
 					// exit 처리

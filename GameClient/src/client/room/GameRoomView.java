@@ -1,8 +1,19 @@
 package client.room;
 
+import java.awt.Color;
 import java.awt.Container;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Vector;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 import data.GameRoom;
 
@@ -12,6 +23,16 @@ public class GameRoomView extends JFrame{
 	private GameRoom room;
 	
 	private Container contentPane;
+	private JLabel roomTitle;
+	private JTextField txtInput;
+	private JTextArea textArea;
+	private JButton btnSend;
+	
+	private JButton[] btnReady = new JButton[4];
+	private Vector userList;
+	
+	private Color btnEnable = new Color(180, 210, 255);
+	private Color btnDisable = new Color(200, 200, 200);
 	
 	public GameRoomView(WaitingView parent, GameRoom room) {
 		this.parent = parent;
@@ -23,6 +44,54 @@ public class GameRoomView extends JFrame{
 		
 		contentPane = getContentPane();
 		contentPane.setLayout(null);
+		
+		roomTitle = new JLabel(" [#" + room.getKey() + "] "+room.getName());
+		roomTitle.setOpaque(true);
+		roomTitle.setBounds(10, 10, 200, 25);
+		roomTitle.setBackground(btnDisable);
+		roomTitle.setFont(new Font("맑은 고딕", Font.BOLD, 15));
+		contentPane.add(roomTitle);
+		
+		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setBounds(10, 45, 200, 375);
+		contentPane.add(scrollPane);
+
+		textArea = new JTextArea();
+		textArea.setEditable(true);
+		textArea.setFont(new Font("굴림체", Font.PLAIN, 12));
+		scrollPane.setViewportView(textArea);
+
+		txtInput = new JTextField();
+		txtInput.setBounds(10, 420, 130, 30);
+		contentPane.add(txtInput);
+		txtInput.setColumns(10);
+
+		btnSend = new JButton("Send");
+		btnSend.setOpaque(true);
+		btnSend.setBackground(btnEnable);
+		btnSend.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 12));
+		btnSend.setBounds(140, 420, 70, 30);
+		contentPane.add(btnSend);
+		
+		TextSendAction action = new TextSendAction();
+		btnSend.addActionListener(action);
+		txtInput.addActionListener(action);
+		
+		// 초기 화면 - Ready창 띄우기
+		userList = room.getUserList();
+		System.out.println(userList.size());
+		for (int i = 0; i < userList.size(); i++) {
+			String me = parent.getMyName();
+			btnReady[i] = new JButton(userList.get(i).toString());
+			btnReady[i].setOpaque(true);
+			btnReady[i].setBackground(btnDisable);
+			btnReady[i].setFont(new Font("맑은 고딕", Font.BOLD, 20));
+			btnReady[i].setBounds(220 + 165*i, 45, 160, 400);
+			if(!userList.get(i).equals(me)) {
+				btnReady[i].setEnabled(false);
+			}
+			contentPane.add(btnReady[i]);
+		}
 
 		// Frame 크기 설정
 		setSize(900, 500);
@@ -32,5 +101,39 @@ public class GameRoomView extends JFrame{
 		// focus 지정 - Mouse Listener를 받을 수 있게 함
 		contentPane.setFocusable(true);
 		contentPane.requestFocus();
+	}
+	
+	// Server로부터 Room의 변경사항을 받은 경우, revalidate()로 업데이트
+	public void update(GameRoom room) {
+		this.room = room;
+		System.out.println(room.getUserList());
+		revalidate();
+	}
+	
+	// 화면에 출력
+	public void AppendText(String msg) {
+		textArea.append(msg + "\n");
+		msg = msg.trim(); // 앞뒤 blank와 \n을 제거한다.
+		int len = textArea.getDocument().getLength();
+		// 끝으로 이동
+		//textArea.setCaretPosition(len);
+		//textArea.replaceSelection(msg + "\n");
+	}
+	
+	// keyboard enter key 치면 서버로 전송
+	class TextSendAction implements ActionListener {
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			// Send button을 누르거나 메시지 입력하고 Enter key 치면
+			if (e.getSource() == btnSend || e.getSource() == txtInput) {
+				String msg = null;
+				msg = txtInput.getText();
+				parent.SendMessage(room.getKey(), msg);
+				txtInput.setText(""); // 메세지를 보내고 나면 메세지 쓰는창을 비운다.
+				txtInput.requestFocus(); // 메세지를 보내고 커서를 다시 텍스트 필드로 위치시킨다
+				if (msg.contains("/exit")) // 종료 처리
+					System.exit(0);
+			}
+		}
 	}
 }

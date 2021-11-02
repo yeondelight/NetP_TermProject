@@ -1,4 +1,4 @@
-package data;
+package client.room;
 
 import java.util.HashMap;
 import java.util.Set;
