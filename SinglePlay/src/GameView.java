@@ -9,7 +9,7 @@ public class GameView extends JFrame{
 	private final int MAPNUM = 1;		// 임시로 1로 설정 : 방마다 다르게 해보기
 	private final int ITEMS = 5;		// map에서 나타날 아이템의 수
 	
-	private final int WIDTH = 415;		// component의 가로 갈이를 맞추기 위해 설정
+	private final int WIDTH = 420;		// component의 가로 갈이를 맞추기 위해 설정
 	
 	private Container contentPane;
 	private MapPanel mapPanel;			// map이 나타나는 Panel

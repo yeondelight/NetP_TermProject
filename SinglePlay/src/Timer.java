@@ -7,7 +7,7 @@ import javax.swing.JLabel;
 public class Timer extends Thread{
 	
 	private JLabel timerLabel;		// timer를 표시할 JLabel
-	private int timeout = 20;		// default : 60sec
+	private int timeout = 2000;		// default : 60sec
 	private static boolean timerStatus;	// timer의 작동 상태 확인
 	
 	private int r = 240;

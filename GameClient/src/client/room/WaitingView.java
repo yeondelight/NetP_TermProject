@@ -19,7 +19,6 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.Vector;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -29,6 +28,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
 import data.ChatMsg;
+import data.GameMap;
+import data.GameMsg;
 import data.GameRoom;
 import data.RoomMsg;
 
@@ -176,6 +177,7 @@ public class WaitingView extends JFrame{
 					String msg = null;
 					ChatMsg cm;
 					RoomMsg rm;
+					GameMsg gm;
 					try {
 						obcm = ois.readObject();
 					} catch (ClassNotFoundException e) {
@@ -251,12 +253,6 @@ public class WaitingView extends JFrame{
 							gameRoomView.addUser(name, status);
 						}
 						
-						// S_STRGAME(340)
-						// Server -> Client 게임 시작 허가
-						else if (ccode.equals(S_STRGAME)) {
-							gameRoomView.startGame();
-						}
-						
 					}
 					else if (obcm instanceof RoomMsg) {
 						rm = (RoomMsg) obcm;
@@ -277,6 +273,22 @@ public class WaitingView extends JFrame{
 							gameRoomView.setVisible(true);
 							SendObject(new ChatMsg(userName, C_UPDROOM, gameRoom.getKey()+""));		// 업데이트좀
 							getWaitingView().setVisible(false);			// 현재 WaitingView 퇴장 : 다른 방에 입장하지 못하도록 막음
+						}
+					}
+					else if (obcm instanceof GameMsg) {
+						gm = (GameMsg) obcm;
+						
+						String gcode = gm.getCode();
+						GameMap gameMap = gm.getMap();
+						
+						System.out.println("CLIENT CODE : "+gcode);
+						
+						// 이하 Protocol 처리 - RoomMsg 수신
+
+						// S_STRGAME(340)
+						// Server -> Client 게임 시작 허가
+						if (gcode.equals(S_STRGAME)) {
+							gameRoomView.startGame(gameMap);
 						}
 					}
 					else
