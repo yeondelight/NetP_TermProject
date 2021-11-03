@@ -5,7 +5,6 @@ import java.awt.Container;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
 import java.util.Vector;
 
 import javax.swing.JButton;
@@ -16,6 +15,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import data.ChatMsg;
+import data.GameMap;
 import data.GameRoom;
 
 public class GameRoomView extends JFrame{
@@ -48,10 +48,13 @@ public class GameRoomView extends JFrame{
 	private Vector<JButton> readyBtn = new Vector<JButton>();
 	
 	private boolean isPressed = false;
-	
+	private boolean isStarted = false;
 	
 	private Color btnEnable = new Color(180, 210, 255);
 	private Color btnDisable = new Color(200, 200, 200);
+	
+	// 게임 시작 이후 map 표시
+	private MapPanel mapPanel;
 
 	public GameRoomView(WaitingView parent, GameRoom room) {
 		this.parent = parent;
@@ -196,9 +199,24 @@ public class GameRoomView extends JFrame{
 	}
 	
 	// 게임 시작
-	public void startGame() {
+	// GameView를 새롭게 그리고 update요청
+	public void startGame(GameMap gameMap) {
+		isStarted = true;
+		for (int i = 0; i < readyBtn.size(); i++) {
+			contentPane.remove(readyBtn.get(i));
+		}
 		startBtn.setEnabled(false);
+		
+		// Map 그리기
+		mapPanel = new MapPanel(gameMap, myName);
+		mapPanel.setBounds(220, 00, 460, 460);
+		contentPane.add(mapPanel);
 		System.out.println("CLIENT "+myName+" GAME STARTED");
+
+		contentPane.revalidate();
+		contentPane.repaint(); 
+		
+		mapPanel.requestFocus();
 	}
 	
 	// keyboard enter key 치면 서버로 전송
@@ -211,15 +229,16 @@ public class GameRoomView extends JFrame{
 				msg = txtInput.getText();
 				parent.SendMessage(room.getKey(), msg);
 				txtInput.setText(""); // 메세지를 보내고 나면 메세지 쓰는창을 비운다.
-				txtInput.requestFocus(); // 메세지를 보내고 커서를 다시 텍스트 필드로 위치시킨다
-				if (msg.contains("/exit")) // 종료 처리
-					System.exit(0);
+				if (mapPanel != null)
+					mapPanel.requestFocus();
+				else
+					txtInput.requestFocus(); // 메세지를 보내고 커서를 다시 텍스트 필드로 위치시킨다
 			}
 		}
 	}
 	
 	// ReadyBtn을 위한 EventListener - 버튼을 누르면 ready 상태를 바꾸고 server에 update 요청
-	public class ReadyActionListener implements ActionListener{
+	class ReadyActionListener implements ActionListener{
 		private int key;
 		public ReadyActionListener(int key) {
 			this.key = key;
@@ -231,7 +250,7 @@ public class GameRoomView extends JFrame{
 	} // End of class ReadyActionListener
 	
 	// StartBtn을 위한 EventListener - 버튼을 누르면 ready 상태를 체크하고 Game start
-	public class StartActionListener implements ActionListener{
+	class StartActionListener implements ActionListener{
 		private int key;
 		public StartActionListener(int key) {
 			this.key = key;

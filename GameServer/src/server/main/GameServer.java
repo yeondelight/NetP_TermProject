@@ -27,6 +27,8 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
 import data.ChatMsg;
+import data.GameMap;
+import data.GameMsg;
 import data.GameRoom;
 import data.RoomMsg;
 
@@ -157,10 +159,12 @@ public class GameServer extends JFrame{
 		private static final String SLEEP = "SLEEP";
 		private static final String READYON = "READYON";
 		private static final String READYOFF = "READYOFF";
-		private static final String GAME = "GAME";
 		
 		// 이하 GameRoom 처리를 위한 변수
 		private GameRoom gameRoom = null;			// 초기에는 게임방에 입장하지 않았으므로
+		private final static String AVAIL = "AVAIL";
+		private final static String FULL = "FULL";
+		private final static String STARTED = "STARTED";
 		
 		// 이하 Protocol msg
 		private static final String C_LOGIN = "100";		// 새로운 client 접속
@@ -480,7 +484,11 @@ public class GameServer extends JFrame{
 					else if (cm.getCode().matches(C_STRGAME)) {
 						int key = Integer.parseInt(cm.getData());
 						GameRoom room = roomManager.getRoom(key);
-						WriteRoomObject(key, new ChatMsg(UserName, S_STRGAME, ""));
+						GameMap gameMap = new GameMap(room.getUserList());
+						room.setStatus(STARTED);		// 방 상태 변경
+						room.setGameMap(gameMap);		// 방에 Map 정보 등록
+						WriteRoomObject(key, new GameMsg(UserName, S_STRGAME, gameMap));
+						WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));		// 방의 상태가 변경되었으므로
 					}
 					
 					// exit 처리
@@ -507,7 +515,11 @@ public class GameServer extends JFrame{
 						client_socket.close();
 						if(this.getGameRoom()!=null) {		// 게임방에 있는 경우
 							int pNum = gameRoom.exitUser(this.UserName);
-							WriteRoomObject(gameRoom.getKey(), new ChatMsg(UserName, S_UPDROOM, pNum+""));		// 게임방에서 해당 user를 제거한다.
+							if(this.getGameRoom().getStatus().equals(STARTED))
+								// 게임중의 user 이탈 처리
+								System.out.println("USER EXITED");
+							else
+								WriteRoomObject(gameRoom.getKey(), new ChatMsg(UserName, S_UPDROOM, pNum+""));		// 게임방에서 해당 user를 제거한다.
 							WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));			// WaitingView를 update 한다.
 						}
 						UserVec.removeElement(this); // 에러가난 현재 객체를 벡터에서 지운다

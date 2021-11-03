@@ -8,7 +8,6 @@
     <fullyQualifiedTypeName name="javax.swing.ImageIcon"/>
     <fullyQualifiedTypeName name="java.awt.FlowLayout"/>
     <fullyQualifiedTypeName name="java.awt.BorderLayout"/>
-    <fullyQualifiedTypeName name="java.awt.Point"/>
     <fullyQualifiedTypeName name="java.awt.event.MouseEvent"/>
     <fullyQualifiedTypeName name="javax.swing.JFrame"/>
     <fullyQualifiedTypeName name="java.awt.Font"/>
@@ -25,4 +24,7 @@
     <fullyQualifiedTypeName name="data.RoomMsg"/>
     <fullyQualifiedTypeName name="sun.jvm.hotspot.debugger.win32.coff.TestDebugInfo"/>
     <fullyQualifiedTypeName name="java.util.Vector"/>
+    <fullyQualifiedTypeName name="server.map.Maze"/>
+    <fullyQualifiedTypeName name="java.awt.Point"/>
+    <fullyQualifiedTypeName name="data.GameMap"/>
 </qualifiedTypeNameHistroy>
