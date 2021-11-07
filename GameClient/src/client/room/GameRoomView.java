@@ -207,11 +207,12 @@ public class GameRoomView extends JFrame{
 		}
 		startBtn.setEnabled(false);
 		
+		System.out.println("CLIENT "+myName+" GAME STARTED");
+		
 		// Map ±×¸®±â
-		mapPanel = new MapPanel(gameMap, myName);
+		mapPanel = new MapPanel(parent, gameMap, myName);
 		mapPanel.setBounds(220, 00, 460, 460);
 		contentPane.add(mapPanel);
-		System.out.println("CLIENT "+myName+" GAME STARTED");
 
 		contentPane.revalidate();
 		contentPane.repaint(); 
