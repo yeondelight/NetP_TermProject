@@ -2,6 +2,7 @@ package server.main;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -175,6 +176,7 @@ public class GameServer extends JFrame{
 		private static final String C_UPDROOM = "302";		// C->S GameRoom 업데이트좀
 		private static final String C_ACKROOM = "303";		// C->S 320 ACK
 		private static final String C_STRGAME = "304";		// C->S 게임 시작할래
+		private static final String C_UPDGAME = "305";		// Client -> Server 전송은 305
 		
 		private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
 		private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
@@ -184,6 +186,8 @@ public class GameServer extends JFrame{
 		private static final String S_UPDROOM = "320";		// GameRoom 정보 update : user 수 반환
 		private static final String S_USRLIST = "330";		// userList update
 		private static final String S_STRGAME = "340";		// S->C 그래 시작해
+		private static final String S_UPDGAME = "350";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Event)
+		private static final String S_UPDTIME = "360";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Timer)
 		
 		public String getUserName() {
 			return UserName;
@@ -489,6 +493,42 @@ public class GameServer extends JFrame{
 						room.setGameMap(gameMap);		// 방에 Map 정보 등록
 						WriteRoomObject(key, new GameMsg(UserName, S_STRGAME, gameMap));
 						WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));		// 방의 상태가 변경되었으므로
+						// 새로운 Thread 열어서 Timer Check 필요
+						new Thread() {
+							int timeout = 60;
+							public void run() {
+								WriteRoomObject(key, new ChatMsg(UserName, S_UPDTIME, timeout+""));
+								while(true) {
+									try {
+										timeout--;
+										Thread.sleep(1000);
+										WriteRoomObject(key, new ChatMsg(UserName, S_UPDTIME, timeout+""));
+										
+										// timeout 설정
+										if(timeout <= 0) {
+											// timer 멈춤
+											return;
+										}
+									}
+									catch(Exception e) {
+										e.printStackTrace();
+									}
+								}
+							}
+						}.start();
+					}
+					
+					// C_UPDGAME(305)
+					// Client -> Server 나 움직였어
+					// new ChatMsg(USERNAME, 305, roomKey, e) 형태
+					// 같은 게임방 내 User들에게 전송
+					else if (cm.getCode().matches(C_UPDGAME)) {
+						int key = Integer.parseInt(cm.getData());
+						GameRoom room = roomManager.getRoom(key);
+						Integer keyCode = cm.getKeyCode();
+						if (keyCode != null) {		// Keyboard Event가 넘어왔으면
+							WriteRoomObject(key, new ChatMsg(UserName, S_UPDGAME, cm.getData(), keyCode));
+						}
 					}
 					
 					// exit 처리

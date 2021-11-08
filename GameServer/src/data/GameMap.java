@@ -19,13 +19,10 @@ public class GameMap implements Serializable{
 	private HashMap<String, Point> playerXY = new HashMap<String, Point>();
 	private HashMap<String, Integer> playerScore = new HashMap<String, Integer>();
 	
-	private int time;
-	
 	public GameMap(Vector userList) {
 		map = new Maze().generateMap();
 		initItem(ITEMNUM);
 		initPlayer(userList);
-		//time = 60;
 	}
 	
 	// 이하 Getter
@@ -51,7 +48,8 @@ public class GameMap implements Serializable{
 		do {
 			int x = random.nextInt(LEN);
 			int y = random.nextInt(LEN);
-			if(getXY(x, y) == 0) {
+			// item 위치 중복 방지 처리
+			if((getXY(x, y) == 0) && (item.contains(new Point(x, y)) == false)) {
 				item.add(new Point(x, y));
 				count++;
 			}
@@ -62,7 +60,7 @@ public class GameMap implements Serializable{
 		for (int i = 0; i < userList.size(); i++) {
 			String userName = (String)userList.get(i);	// 각 player에 대해
 			playerScore.put(userName, 0);				// 점수를 0으로 reset하고
-			playerXY.put(userName, new Point(0, 1));	// 시작 위치를 설정한다.
+			playerXY.put(userName, new Point(0, 1));	// 시작 위치를 설정한다. : ERROR 발생 - 0, 1 맞는데 왜 인식 안돼?
 		}
 	}
 

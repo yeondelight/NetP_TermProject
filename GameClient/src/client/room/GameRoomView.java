@@ -5,6 +5,7 @@ import java.awt.Container;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.util.Vector;
 
 import javax.swing.JButton;
@@ -53,8 +54,9 @@ public class GameRoomView extends JFrame{
 	private Color btnEnable = new Color(180, 210, 255);
 	private Color btnDisable = new Color(200, 200, 200);
 	
-	// 게임 시작 이후 map 표시
+	// 게임 시작 이후
 	private MapPanel mapPanel;
+	private JLabel timerLabel;
 
 	public GameRoomView(WaitingView parent, GameRoom room) {
 		this.parent = parent;
@@ -210,14 +212,40 @@ public class GameRoomView extends JFrame{
 		System.out.println("CLIENT "+myName+" GAME STARTED");
 		
 		// Map 그리기
-		mapPanel = new MapPanel(parent, gameMap, myName);
+		mapPanel = new MapPanel(parent, gameMap, room.getKey(), myName);
 		mapPanel.setBounds(220, 00, 460, 460);
 		contentPane.add(mapPanel);
+		
+		// TimerLabel 그리기
+		timerLabel = new JLabel(" 남은 시간 : "+99+" sec");		// 그냥 임의로 넣어둔 99. 이게 나타나면 오류라는 뜻.
+		timerLabel.setOpaque(true);
+		timerLabel.setBackground(new Color(240, 200, 200));
+		timerLabel.setBounds(690, 10, 180, 40);
+		timerLabel.setFont(new Font("맑은 고딕", Font.BOLD, 15));
+		contentPane.add(timerLabel);
 
 		contentPane.revalidate();
 		contentPane.repaint(); 
 		
 		mapPanel.requestFocus();
+	}
+	
+	// Server로부터 남은 시간을 받아 update
+	public void updateTimer(int timeout) {
+		timerLabel.setText(" 남은 시간 : " + timeout + " 초 ");
+		// 남은 시간이 촉박할수록 배경색이 true RED에 가까워진다.
+		if(timeout<=10)
+			timerLabel.setBackground(new Color(240, 200-(10-timeout)*15, 200-(10-timeout)*15));
+		
+		contentPane.revalidate();
+		contentPane.repaint(); 
+		
+		mapPanel.requestFocus();
+	}
+	
+	// Server로부터 받은 이벤트 전달하기
+	public void doKeyEvent(String userName, int keyCode) {
+		mapPanel.doKeyEvent(userName, keyCode);
 	}
 	
 	// keyboard enter key 치면 서버로 전송
