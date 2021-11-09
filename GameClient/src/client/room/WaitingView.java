@@ -7,6 +7,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -44,6 +45,8 @@ public class WaitingView extends JFrame{
 	private static final String C_UPDROOM = "302";		// C->S GameRoom 업데이트좀
 	private static final String C_ACKROOM = "303";		// C->S 320 ACK
 	private static final String C_STRGAME = "304";		// C->S 게임 시작할래
+	private static final String C_UPDGAME = "305";		// Client -> Server 움직임 알림
+	private static final String C_UPDSCORE = "307";		// Client -> Server 점수 변경 알림
 	
 	private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
 	private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
@@ -53,6 +56,9 @@ public class WaitingView extends JFrame{
 	private static final String S_UPDROOM = "320";		// GameRoom 정보 update : user 수 반환
 	private static final String S_USRLIST = "330";		// userList update
 	private static final String S_STRGAME = "340";		// S->C 그래 시작해
+	private static final String S_UPDGAME = "350";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Event)
+	private static final String S_UPDTIME = "360";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Timer)
+	private static final String S_UPDSCORE = "370";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Score)
 	
 	private static final int BUF_LEN = 128; //  Windows 처럼 BUF_LEN 을 정의
 	private Socket socket; // 연결소켓
@@ -253,6 +259,31 @@ public class WaitingView extends JFrame{
 							gameRoomView.addUser(name, status);
 						}
 						
+						// S_UPDGAME(350)
+						// Server -> Client 게임 업데이트
+						else if (ccode.equals(S_UPDGAME)) {
+							Integer keyCode = cm.getNumCode();
+							gameRoomView.doKeyEvent(cm.getId(), keyCode);	// MapPanel로 넘겨주기
+						}
+						
+						// S_UPDTIME(360)
+						// Server -> Client Timer 갱신
+						else if (ccode.equals(S_UPDTIME)) {
+							int timeout = Integer.parseInt(cm.getData());
+							gameRoomView.updateTimer(timeout);
+						}
+						
+						// S_UPDSCORE(370)
+						// Server -> Client Score 갱신
+						// new ChatMsg(USERNAME, 307, roomKey +-/*, score) 형태
+						// 같은 게임방 내 User들에게 전송
+						else if (cm.getCode().matches(S_UPDSCORE)) {
+							String val[] = cm.getData().split(" ");
+							int key = Integer.parseInt(val[0]);
+							String cal = val[1];
+							Integer score = cm.getNumCode();
+							gameRoomView.updateScore(cm.getId(), cal, score);
+						}
 					}
 					else if (obcm instanceof RoomMsg) {
 						rm = (RoomMsg) obcm;

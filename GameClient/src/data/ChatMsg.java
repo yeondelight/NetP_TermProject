@@ -1,6 +1,7 @@
 // ChatMsg.java 채팅 메시지 ObjectStream 용.
 package data;
 
+import java.awt.event.KeyEvent;
 import java.io.Serializable;
 import javax.swing.ImageIcon;
 import data.GameRoom;
@@ -12,10 +13,21 @@ public class ChatMsg implements Serializable {
 	private String data;
 	public ImageIcon img;
 
+	private int numCode;
+
+	// default
 	public ChatMsg(String id, String code, String msg) {
 		this.id = id;
 		this.code = code;
 		this.data = msg;
+	}
+	
+	// Event, Score 등등...
+	public ChatMsg(String id, String code, String data, int numCode) {
+		this.id = id;
+		this.code = code;
+		this.data = data;
+		this.numCode = numCode;
 	}
 
 	public String getCode() {
@@ -32,6 +44,10 @@ public class ChatMsg implements Serializable {
 
 	public String getId() {
 		return id;
+	}
+	
+	public int getNumCode() {
+		return numCode;
 	}
 
 	public void setId(String id) {

@@ -14,7 +14,6 @@
     <fullyQualifiedTypeName name="javax.swing.JScrollPane"/>
     <fullyQualifiedTypeName name="java.awt.EventQueue"/>
     <fullyQualifiedTypeName name="client.wait.ChatMsg"/>
-    <fullyQualifiedTypeName name="data.ChatMsg"/>
     <fullyQualifiedTypeName name="client.game.GameView"/>
     <fullyQualifiedTypeName name="server.room.RoomManager"/>
     <fullyQualifiedTypeName name="data.GameRoom"/>
@@ -27,4 +26,11 @@
     <fullyQualifiedTypeName name="server.map.Maze"/>
     <fullyQualifiedTypeName name="java.awt.Point"/>
     <fullyQualifiedTypeName name="data.GameMap"/>
+    <fullyQualifiedTypeName name="java.awt.Event"/>
+    <fullyQualifiedTypeName name="java.awt.event.KeyEvent"/>
+    <fullyQualifiedTypeName name="data.GameMsg"/>
+    <fullyQualifiedTypeName name="data.ChatMsg"/>
+    <fullyQualifiedTypeName name="java.util.Iterator"/>
+    <fullyQualifiedTypeName name="java.util.Comparator"/>
+    <fullyQualifiedTypeName name="java.util.Collections"/>
 </qualifiedTypeNameHistroy>
