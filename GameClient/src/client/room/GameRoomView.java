@@ -243,6 +243,11 @@ public class GameRoomView extends JFrame{
 		mapPanel.requestFocus();
 	}
 	
+	// Server로부터 점수를 받아 update
+	public void updateScore(String userName, int score) {
+		
+	}
+	
 	// Server로부터 받은 이벤트 전달하기
 	public void doKeyEvent(String userName, int keyCode) {
 		mapPanel.doKeyEvent(userName, keyCode);

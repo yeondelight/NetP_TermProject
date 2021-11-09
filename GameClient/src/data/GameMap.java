@@ -59,8 +59,7 @@ public class GameMap implements Serializable{
 	private void initPlayer(Vector userList) {
 		for (int i = 0; i < userList.size(); i++) {
 			String userName = (String)userList.get(i);	// 각 player에 대해
-			playerScore.put(userName, 0);				// 점수를 0으로 reset하고
-			playerXY.put(userName, new Point(0, 1));	// 시작 위치를 설정한다. : ERROR 발생 - 0, 1 맞는데 왜 인식 안돼?
+			playerXY.put(userName, new Point(20, 0));	// 시작위치 조정
 		}
 	}
 

@@ -114,8 +114,7 @@ public class MapPanel extends JPanel implements Serializable{
 		}
 
 		// player 그리기
-		Set<String> keys = playerXY.keySet();
-		Iterator<String> it = keys.iterator();
+		Iterator<String> it = playerXY.keySet().iterator();
 		while(it.hasNext()) {
 			String userName = it.next();
 			Point coordinate = playerXY.get(userName);
@@ -171,7 +170,6 @@ public class MapPanel extends JPanel implements Serializable{
 		}
 		
 		// 다시 저장
-		playerXY.remove(userName);
 		playerXY.put(userName, coordinate);
 		
 		repaint();

@@ -414,6 +414,10 @@ public class GameServer extends JFrame{
 						String name = val[1];
 						GameRoom room = new GameRoom(key, name);
 						roomManager.addRoom(room);
+						// First User 입장 처리
+						this.enterRoom(room);
+						this.setUserStatus(READYOFF);
+						room.enterUser(UserName);
 						WriteOneObject(new RoomMsg(UserName, S_ENTROOM, room));
 						WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));
 					}
