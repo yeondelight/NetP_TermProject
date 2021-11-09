@@ -5,9 +5,11 @@ import java.awt.Container;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Vector;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -53,10 +55,19 @@ public class GameRoomView extends JFrame{
 	
 	private Color btnEnable = new Color(180, 210, 255);
 	private Color btnDisable = new Color(200, 200, 200);
+	private Color defaultColor = new Color(238, 238, 238);
 	
 	// 게임 시작 이후
 	private MapPanel mapPanel;
 	private JLabel timerLabel;
+	private Vector<JLabel> scoreInfo = new Vector<JLabel>();		// 1st, 2nd ...
+	private Vector<UserScore> scores = new Vector<UserScore>();		// score 정보 및 JLabel 관리
+	
+	private ImageIcon rank1 = new ImageIcon("res/ranks/1.png");
+	private ImageIcon rank2 = new ImageIcon("res/ranks/2.png");
+	private ImageIcon rank3 = new ImageIcon("res/ranks/3.png");
+	private ImageIcon rank4 = new ImageIcon("res/ranks/4.png");
+	private ImageIcon[] ranks = {rank1, rank2, rank3, rank4};
 
 	public GameRoomView(WaitingView parent, GameRoom room) {
 		this.parent = parent;
@@ -208,6 +219,7 @@ public class GameRoomView extends JFrame{
 			contentPane.remove(readyBtn.get(i));
 		}
 		startBtn.setEnabled(false);
+		startBtn.setBackground(btnDisable);
 		
 		System.out.println("CLIENT "+myName+" GAME STARTED");
 		
@@ -220,9 +232,46 @@ public class GameRoomView extends JFrame{
 		timerLabel = new JLabel(" 남은 시간 : "+99+" sec");		// 그냥 임의로 넣어둔 99. 이게 나타나면 오류라는 뜻.
 		timerLabel.setOpaque(true);
 		timerLabel.setBackground(new Color(240, 200, 200));
-		timerLabel.setBounds(690, 10, 180, 40);
+		timerLabel.setBounds(690, 10, 185, 40);
 		timerLabel.setFont(new Font("맑은 고딕", Font.BOLD, 15));
 		contentPane.add(timerLabel);
+		
+		// ScoreLabel 그리기
+		for(int i = 0; i < userList.size(); i++) {
+			String userName = userList.get(i);
+			UserScore userScore = new UserScore(userName);
+			
+			// Rank 붙이기
+			JLabel rank = new JLabel(ranks[i]);
+			rank.setOpaque(true);
+			rank.setBounds(690, 60 + 40*i, 70, 40);
+			if(userName.equals(myName))	rank.setBackground(Color.WHITE);
+			else						rank.setBackground(defaultColor);
+			contentPane.add(rank);
+			
+			// userScore 붙이기
+			JLabel info = new JLabel(" " + userName);
+			info.setOpaque(true);
+			info.setBounds(760, 60 + 40*i, 60, 40);
+			info.setFont(new Font("맑은 고딕", Font.BOLD, 15));
+			if(userName.equals(myName))	info.setBackground(Color.WHITE);
+			else						info.setBackground(defaultColor);
+			userScore.setNameLabel(info);
+			contentPane.add(info);
+			
+			userScore.setScore(0);
+			JLabel score = new JLabel(" "+userScore.getScore());
+			score.setOpaque(true);
+			score.setBounds(820, 60 + 40*i, 55, 40);
+			score.setFont(new Font("맑은 고딕", Font.BOLD, 15));
+			if(userName.equals(myName))	score.setBackground(Color.WHITE);
+			else						score.setBackground(defaultColor);
+			userScore.setScoreLabel(score);
+			contentPane.add(score);
+			
+			scoreInfo.add(rank);
+			scores.add(userScore);
+		}
 
 		contentPane.revalidate();
 		contentPane.repaint(); 
@@ -244,8 +293,62 @@ public class GameRoomView extends JFrame{
 	}
 	
 	// Server로부터 점수를 받아 update
-	public void updateScore(String userName, int score) {
+	public void updateScore(String userName, String cal, int score) {
 		
+		// 해당 user의 점수 update
+		UserScore userScore = null;
+		for (int i = 0; i < scores.size(); i++) {
+			userScore = scores.get(i);
+			if(userScore.getUserName().equals(userName))
+				break;
+		}
+		
+		int tempScore = userScore.getScore();
+		
+		switch(cal) {
+		case "+":
+			tempScore += score;
+			break;
+		case "-":
+			tempScore -= score;
+			break;
+		}
+		
+		userScore.setScore(tempScore);
+		
+		// Label update	with sorting
+		String tempName;
+		JLabel tempNameLabel;
+		JLabel tempScoreLabel;
+		JLabel scoreInfoLabel;
+		Collections.sort(scores, new UserScoreComparator());
+		for (int i = 0; i < scores.size(); i++) {
+			scoreInfoLabel = scoreInfo.get(i);
+			userScore = scores.get(i);
+			tempName = userScore.getUserName();
+			
+			tempNameLabel = userScore.getNameLabel();
+			tempNameLabel.setBounds(760, 60 + 40*i, 60, 40);
+			if(tempName.equals(myName)) {
+				tempNameLabel.setBackground(Color.WHITE);
+				scoreInfoLabel.setBackground(Color.WHITE);
+			}
+			else {
+				tempNameLabel.setBackground(defaultColor);
+				scoreInfoLabel.setBackground(defaultColor);
+			}
+
+			tempScoreLabel = userScore.getScoreLabel();
+			tempScoreLabel.setBounds(820, 60 + 40*i, 55, 40);
+			if (tempName.equals(userName))	tempScoreLabel.setText(" "+tempScore);	// 점수 변경 처리
+			if(tempName.equals(myName))	tempScoreLabel.setBackground(Color.WHITE);
+			else						tempScoreLabel.setBackground(defaultColor);
+		}
+		
+		contentPane.revalidate();
+		contentPane.repaint(); 
+				
+		mapPanel.requestFocus();
 	}
 	
 	// Server로부터 받은 이벤트 전달하기

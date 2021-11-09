@@ -12,7 +12,7 @@ public class GameMap implements Serializable{
 	private static final long serialVersionUID = 1L;
 	
 	private static final int LEN = 23;		// 미로의 한 변의 길이
-	private static final int ITEMNUM = 10;
+	private static final int ITEMNUM = 30;
 		
 	private int[][] map;
 	private Vector<Point> item = new Vector<Point>();

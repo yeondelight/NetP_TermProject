@@ -13,7 +13,7 @@ public class ChatMsg implements Serializable {
 	private String data;
 	public ImageIcon img;
 
-	private int keyCode;
+	private int numCode;
 
 	// default
 	public ChatMsg(String id, String code, String msg) {
@@ -22,12 +22,12 @@ public class ChatMsg implements Serializable {
 		this.data = msg;
 	}
 	
-	// Event
-	public ChatMsg(String id, String code, String data, int keyCode) {
+	// Event, Score µîµî...
+	public ChatMsg(String id, String code, String data, int numCode) {
 		this.id = id;
 		this.code = code;
 		this.data = data;
-		this.keyCode = keyCode;
+		this.numCode = numCode;
 	}
 
 	public String getCode() {
@@ -46,8 +46,8 @@ public class ChatMsg implements Serializable {
 		return id;
 	}
 	
-	public int getKeyCode() {
-		return keyCode;
+	public int getNumCode() {
+		return numCode;
 	}
 
 	public void setId(String id) {

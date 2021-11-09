@@ -31,4 +31,6 @@
     <fullyQualifiedTypeName name="data.GameMsg"/>
     <fullyQualifiedTypeName name="data.ChatMsg"/>
     <fullyQualifiedTypeName name="java.util.Iterator"/>
+    <fullyQualifiedTypeName name="java.util.Comparator"/>
+    <fullyQualifiedTypeName name="java.util.Collections"/>
 </qualifiedTypeNameHistroy>

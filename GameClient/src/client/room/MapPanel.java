@@ -27,7 +27,8 @@ public class MapPanel extends JPanel implements Serializable{
 	private final int COLS = 23;	// map의 세로길이
 	private final int UNIT = 20;	// map의 한 칸의 길이 (pixel)
 	
-	private static final String C_UPDGAME = "305";		// Client -> Server 전송은 305
+	private static final String C_UPDGAME = "305";		// Client -> Server 움직임 알림
+	private static final String C_UPDSCORE = "307";		// Client -> Server 점수 변경 알림
 	
 	private int[][] map;			// main map
 	
@@ -165,7 +166,8 @@ public class MapPanel extends JPanel implements Serializable{
 			Point p = item.get(i);
 			if(p.x*UNIT == coordinate.x && p.y*UNIT == coordinate.y) {
 				item.remove(i);
-				//Score.addScore(10);
+				if(userName.equals(myName))
+					parent.SendObject(new ChatMsg(myName, C_UPDSCORE, roomKey + " " + "+", 10));
 			}
 		}
 		
