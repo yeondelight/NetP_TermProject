@@ -546,7 +546,7 @@ public class GameServer extends JFrame{
 						int key = Integer.parseInt(val[0]);
 						GameRoom room = roomManager.getRoom(key);
 						Integer score = cm.getNumCode();
-						WriteRoomObject(key, new ChatMsg(UserName, S_UPDSCORE, cm.getData(), score));
+						WriteRoomObject(key, new ChatMsg(cm.getId(), S_UPDSCORE, cm.getData(), score));
 					}
 					
 					// exit Ã³¸®

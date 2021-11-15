@@ -8,6 +8,7 @@ import java.awt.Point;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.Serializable;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
@@ -43,6 +44,13 @@ public class MapPanel extends JPanel implements Serializable{
 	private Vector<Point> item = new Vector<Point>();
 	private ImageIcon iIcon = new ImageIcon("res/item.png");
 	private Image itemImg = iIcon.getImage();
+	
+	//bullet
+	private Vector<Point> bullet_location = new Vector<Point>();
+	private Point bullet = null;
+	private ImageIcon bIcon = new ImageIcon("res/bullet.png");
+	private Image bulletImg = bIcon.getImage();
+	private BulletThread bulletThread = null;
 	
 	// player 정보
 	private ImageIcon pIcon = new ImageIcon("res/smile.png");
@@ -125,6 +133,11 @@ public class MapPanel extends JPanel implements Serializable{
 				graphics2.drawImage(player2, coordinate.x, coordinate.y, UNIT, UNIT, this);
 		}
 		
+		// bullet 그리기
+		for(Point p: bullet_location) {
+			graphics2.drawImage(bulletImg, p.x, p.y, this);
+		}
+		
 		g.drawImage(panelImage, 0, 0, this);
 
 	}
@@ -159,6 +172,28 @@ public class MapPanel extends JPanel implements Serializable{
 			if(getXY(coordinate.x/UNIT + 1, coordinate.y/UNIT) != 1 && coordinate.x < 460)
 				coordinate.x += UNIT;
 			break;
+			
+		// bullet
+		case KeyEvent.VK_W:
+			bullet = new Point(coordinate.x, coordinate.y);
+			bulletThread = new BulletThread(this, bullet, 0, -1);
+			bulletThread.start();
+			break;
+		case KeyEvent.VK_S:
+			bullet = new Point(coordinate.x, coordinate.y);
+			bulletThread = new BulletThread(this, bullet, 0, 1);
+			bulletThread.start();
+			break;
+		case KeyEvent.VK_A:
+			bullet = new Point(coordinate.x, coordinate.y);
+			bulletThread = new BulletThread(this, bullet, -1, 0);
+			bulletThread.start();
+			break;
+		case KeyEvent.VK_D:
+			bullet = new Point(coordinate.x, coordinate.y);
+			bulletThread = new BulletThread(this, bullet, 1, 0);
+			bulletThread.start();
+			break;
 		}
 		
 		// item을 먹으면 점수를 증가시킨다.
@@ -177,4 +212,94 @@ public class MapPanel extends JPanel implements Serializable{
 		repaint();
 	}
 
+	// bullet의 위치 변함 인지 + repaint
+	public synchronized void bulletRepaint(int x, int y) {
+		bullet_location.add(new Point(x,y));
+		
+		// 다른 player와 bullet이 맞은 경우
+		Iterator<String> it = playerXY.keySet().iterator();
+		while(it.hasNext()) {
+			String userName = it.next();
+			Point coordinate = playerXY.get(userName);
+			if(!userName.equals(myName)) {
+				if(coordinate.x == x && coordinate.y == y) {
+					parent.SendObject(new ChatMsg(userName, C_UPDSCORE, roomKey + " " + "-", 5));
+					//System.out.println(userName+" WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+				}
+			}
+		}
+				
+		repaint();
+	}
+	public synchronized void bulletRemove(int x, int y) {
+		bullet_location.remove(new Point(x,y));
+		repaint();
+	}
+
 }
+
+class BulletThread extends Thread {
+	private final int UNIT = 20;	// map의 한 칸의 길이 (pixel)
+	private MapPanel mapPanel = null;
+	private Point bullet = null;
+	private int change_x;
+	private int change_y;
+	//private BulletRunnable bulletRunnable = null;
+	
+	public BulletThread(MapPanel mapPanel, Point bullet, int change_x, int change_y) {
+		this.mapPanel = mapPanel;
+		this.bullet = bullet;
+		this.change_x=change_x;
+		this.change_y=change_y;
+	}
+	
+	
+	public void run() {
+		while(true) {
+			if(change_y < 0) {
+				if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) != 1 && bullet.y > 0) {
+					bullet.y -= UNIT;
+					mapPanel.bulletRepaint(bullet.x, bullet.y);
+				} 
+				else if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) == 1) {
+					mapPanel.bulletRemove(bullet.x, bullet.y);
+					return;
+				}
+			}
+			else if(change_y > 0) {
+				if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) != 1 && bullet.y < 460) {
+					bullet.y += UNIT;
+					mapPanel.bulletRepaint(bullet.x, bullet.y);
+				} 
+				else if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) == 1) {
+					mapPanel.bulletRemove(bullet.x, bullet.y);
+					return;
+				}
+			}
+			else if(change_x < 0) {
+				if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) != 1 && bullet.x > 0) {
+					bullet.x -= UNIT;
+					mapPanel.bulletRepaint(bullet.x, bullet.y);
+				} 
+				else if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) == 1) {
+					mapPanel.bulletRemove(bullet.x, bullet.y);
+					return;
+				}
+			}
+			else if(change_x > 0) {
+				if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) != 1 && bullet.x < 460) {
+					bullet.x += UNIT;
+					mapPanel.bulletRepaint(bullet.x, bullet.y);
+				} 
+				else if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) == 1) {
+					mapPanel.bulletRemove(bullet.x, bullet.y);
+					return;
+				}
+			}
+			 
+			try { sleep(20); } catch (InterruptedException e) {e.printStackTrace();}
+			mapPanel.bulletRemove(bullet.x, bullet.y);
+		}
+	 } // end of run
+	
+}// end of BulletThread

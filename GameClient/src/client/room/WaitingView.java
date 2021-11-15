@@ -184,6 +184,7 @@ public class WaitingView extends JFrame{
 					ChatMsg cm;
 					RoomMsg rm;
 					GameMsg gm;
+					
 					try {
 						obcm = ois.readObject();
 					} catch (ClassNotFoundException e) {
