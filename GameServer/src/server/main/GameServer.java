@@ -507,7 +507,7 @@ public class GameServer extends JFrame{
 						WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));		// 방의 상태가 변경되었으므로
 						// 새로운 Thread 열어서 Timer Check 필요
 						new Thread() {
-							int timeout = 60;
+							int timeout = 10;
 							public void run() {
 								WriteRoomObject(key, new ChatMsg(UserName, S_UPDTIME, timeout+""));
 								while(true) {

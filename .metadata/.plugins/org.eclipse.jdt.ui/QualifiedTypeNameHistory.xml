@@ -33,4 +33,5 @@
     <fullyQualifiedTypeName name="java.util.Iterator"/>
     <fullyQualifiedTypeName name="java.util.Comparator"/>
     <fullyQualifiedTypeName name="java.util.Collections"/>
+    <fullyQualifiedTypeName name="client.room.MapPanel.PlayerKeyboardListener.BulletThread"/>
 </qualifiedTypeNameHistroy>

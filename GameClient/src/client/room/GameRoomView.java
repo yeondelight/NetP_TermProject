@@ -71,6 +71,14 @@ public class GameRoomView extends JFrame{
 	private ImageIcon rank3 = new ImageIcon("res/ranks/3.png");
 	private ImageIcon rank4 = new ImageIcon("res/ranks/4.png");
 	private ImageIcon[] ranks = {rank1, rank2, rank3, rank4};
+	
+	// 게임 종료 후
+	private Vector<JLabel> rankUsers;
+	private Vector<JLabel> rankScore;
+	private JLabel rankBoard;
+	private JLabel gameOver;
+	private JButton replay;
+	private JButton goHome;
 
 	public GameRoomView(WaitingView parent, GameRoom room) {
 		this.parent = parent;
@@ -301,6 +309,24 @@ public class GameRoomView extends JFrame{
 		if(timeout<=10)
 			timerLabel.setBackground(new Color(240, 200-(10-timeout)*15, 200-(10-timeout)*15));
 		
+		if(timeout==0) {
+			// 모든 keyListener 해제
+			isStarted = false;
+			mapPanel.deleteKeyListener();
+			
+			// 3초 대기 후에 결과화면 호출
+			new Thread() {
+				public void run() {
+					try {
+						Thread.sleep(3000);
+						endGame();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}.start();
+		}
+		
 		contentPane.revalidate();
 		contentPane.repaint(); 
 		
@@ -364,6 +390,115 @@ public class GameRoomView extends JFrame{
 		contentPane.repaint(); 
 				
 		mapPanel.requestFocus();
+	}
+	
+	// 게임 종료
+	public void endGame() {
+		// 다 지우고
+		contentPane.remove(mapPanel);
+		contentPane.remove(timerLabel);
+
+		for (int i = 0; i < scores.size(); i++) {
+			UserScore userScore = scores.get(i);
+			JLabel scoreInfoLabel = scoreInfo.get(i);
+			JLabel tempNameLabel = userScore.getNameLabel();
+			JLabel tempScoreLabel = userScore.getScoreLabel();
+			
+			contentPane.remove(scoreInfoLabel);
+			contentPane.remove(tempNameLabel);
+			contentPane.remove(tempScoreLabel);
+		}
+		
+		gameOver = new JLabel(new ImageIcon("res/gameResult/gameover.png"));
+		gameOver.setSize(255, 70);
+		gameOver.setLocation(415, 30);
+		gameOver.setHorizontalAlignment(JLabel.CENTER);
+		contentPane.add(gameOver);
+		
+		// 1~3위 계산
+		rankUsers = new Vector<JLabel>(3);
+		rankScore = new Vector<JLabel>(3);
+		Collections.sort(scores, new UserScoreComparator());
+		int max = (scores.size() > 3) ? 3 : scores.size();
+		for (int i = 0; i < max; i++) {
+			UserScore userScore = scores.get(i);
+			JLabel tempRankName = new JLabel(userScore.getUserName());
+			JLabel tempRankScore = new JLabel(userScore.getScore()+" pts");
+			rankUsers.add(tempRankName);
+			rankScore.add(tempRankScore);
+		}
+		
+		// GAMEOVER 그리기
+		
+		
+		// 1위 위치 맞추기
+		rankUsers.get(0).setSize(210, 30);
+		rankUsers.get(0).setLocation(440, 125);
+		rankUsers.get(0).setHorizontalAlignment(JLabel.CENTER);
+		rankUsers.get(0).setFont(new Font("맑은 고딕", Font.BOLD, 25));
+		contentPane.add(rankUsers.get(0));
+		
+		rankScore.get(0).setSize(210, 45);
+		rankScore.get(0).setLocation(440, 160);
+		rankScore.get(0).setHorizontalAlignment(JLabel.CENTER);
+		rankScore.get(0).setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 40));
+		contentPane.add(rankScore.get(0));
+		
+		switch(max) {
+		case 3:		// 3위 위치 맞추기
+			rankUsers.get(2).setSize(210, 30);
+			rankUsers.get(2).setLocation(645, 220);
+			rankUsers.get(2).setHorizontalAlignment(JLabel.CENTER);
+			rankUsers.get(2).setFont(new Font("맑은 고딕", Font.BOLD, 25));
+			contentPane.add(rankUsers.get(2));
+			
+			rankScore.get(2).setSize(210, 45);
+			rankScore.get(2).setLocation(645, 255);
+			rankScore.get(2).setHorizontalAlignment(JLabel.CENTER);
+			rankScore.get(2).setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 40));
+			contentPane.add(rankScore.get(2));
+		case 2:		// 2위 위치 맞추기
+			rankUsers.get(1).setSize(210, 30);
+			rankUsers.get(1).setLocation(230, 200);
+			rankUsers.get(1).setHorizontalAlignment(JLabel.CENTER);
+			rankUsers.get(1).setFont(new Font("맑은 고딕", Font.BOLD, 25));
+			contentPane.add(rankUsers.get(1));
+			
+			rankScore.get(1).setSize(210, 45);
+			rankScore.get(1).setLocation(230, 235);
+			rankScore.get(1).setHorizontalAlignment(JLabel.CENTER);
+			rankScore.get(1).setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 40));
+			contentPane.add(rankScore.get(1));
+			break;
+		}
+
+		// 시상식 화면
+		rankBoard = new JLabel(new ImageIcon("res/gameResult/rankboard.png"));
+		rankBoard.setOpaque(true);
+		rankBoard.setSize(620, 200);
+		rankBoard.setLocation(235, 190);
+		contentPane.add(rankBoard);
+		
+		// 이 방에 남을건지 버튼
+		replay = new JButton(new ImageIcon("res/gameResult/replay.png"));
+		replay.setFocusPainted(false);
+		replay.setBorderPainted(false);
+		replay.setContentAreaFilled(false);
+		replay.setBounds(395, 405, 110, 60);
+		//replay.addActionListener();
+		contentPane.add(replay);
+		
+		// 아님 홈으로 가던가
+		goHome = new JButton(new ImageIcon("res/gameResult/home.png"));
+		goHome.setFocusPainted(false);
+		goHome.setBorderPainted(false);
+		goHome.setContentAreaFilled(false);
+		goHome.setBounds(605, 393, 110, 60);
+		goHome.addActionListener(new ExitActionListener(room.getKey()));
+		contentPane.add(goHome);
+		
+		contentPane.revalidate();
+		contentPane.repaint(); 
 	}
 	
 	// Server로부터 받은 이벤트 전달하기
