@@ -3,6 +3,7 @@ package client.room;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Font;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Collections;
@@ -16,6 +17,7 @@ import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 
 import data.ChatMsg;
 import data.GameMap;
@@ -28,11 +30,12 @@ public class GameRoomView extends JFrame{
 	private static final String SLEEP = "SLEEP";
 	private static final String READYON = "READYON";
 	private static final String READYOFF = "READYOFF";
-	private static final String GAME = "GAME";
 	
+	private static final String C_ENTROOM = "201";		// 해당 방에 입장 
 	private static final String C_UPDROOM = "302";
 	private static final String C_STRGAME = "304";
 	private static final String C_EXITROOM = "308";
+	private static final String C_ENDGAME = "309";
 	
 	private WaitingView parent;
 	private GameRoomView gameRoomView;
@@ -42,7 +45,7 @@ public class GameRoomView extends JFrame{
 	private JLabel roomTitle;
 	
 	private JTextField txtInput;
-	private JTextArea textArea;
+	private JTextPane textArea;
 	private JButton btnSend;
 	private JButton startBtn;
 	private JButton exitBtn;
@@ -71,6 +74,14 @@ public class GameRoomView extends JFrame{
 	private ImageIcon rank3 = new ImageIcon("res/ranks/3.png");
 	private ImageIcon rank4 = new ImageIcon("res/ranks/4.png");
 	private ImageIcon[] ranks = {rank1, rank2, rank3, rank4};
+	
+	// 게임 종료 후
+	private Vector<JLabel> rankUsers;
+	private Vector<JLabel> rankScore;
+	private JLabel rankBoard;
+	private JLabel gameOver;
+	private JButton replay;
+	private JButton goHome;
 
 	public GameRoomView(WaitingView parent, GameRoom room) {
 		this.parent = parent;
@@ -107,11 +118,12 @@ public class GameRoomView extends JFrame{
 		startBtn.setEnabled(false);
 		contentPane.add(startBtn);
 		
-		JScrollPane scrollPane = new JScrollPane();
+		JScrollPane scrollPane
+			= new JScrollPane(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane.setBounds(10, 75, 200, 345);
 		contentPane.add(scrollPane);
 
-		textArea = new JTextArea();
+		textArea = new JTextPane();
 		textArea.setEditable(true);
 		textArea.setFont(new Font("굴림체", Font.PLAIN, 12));
 		scrollPane.setViewportView(textArea);
@@ -215,12 +227,43 @@ public class GameRoomView extends JFrame{
 	
 	// 화면에 출력 - Chatting
 	public void AppendText(String msg) {
-		textArea.append(msg + "\n");
+		// textArea.append(msg + "\n");
+		//AppendIcon(icon1);
 		msg = msg.trim(); // 앞뒤 blank와 \n을 제거한다.
 		int len = textArea.getDocument().getLength();
 		// 끝으로 이동
-		//textArea.setCaretPosition(len);
-		//textArea.replaceSelection(msg + "\n");
+		textArea.setCaretPosition(len);
+		textArea.replaceSelection(msg + "\n");
+	}
+	
+	// 화면에 출력 - Chatting : ServerImg
+	public void AppendImage(ImageIcon ori_icon) {
+		int len = textArea.getDocument().getLength();
+		textArea.setCaretPosition(len); // place caret at the end (with no selection)
+		Image ori_img = ori_icon.getImage();
+		int width, height;
+		double ratio;
+		width = ori_icon.getIconWidth();
+		height = ori_icon.getIconHeight();
+		// Image가 너무 크면 최대 가로 또는 세로 200 기준으로 축소시킨다.
+		if (width > 300 || height > 300) {
+			if (width > height) { // 가로 사진
+				ratio = (double) height / width;
+				width = 200;
+				height = (int) (width * ratio);
+			} else { // 세로 사진
+				ratio = (double) width / height;
+				height = 200;
+				width = (int) (height * ratio);
+			}
+			Image new_img = ori_img.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+			ImageIcon new_icon = new ImageIcon(new_img);
+			textArea.insertIcon(new_icon);
+		} else
+			textArea.insertIcon(ori_icon);
+		len = textArea.getDocument().getLength();
+		textArea.setCaretPosition(len);
+		textArea.replaceSelection("\n");
 	}
 	
 	// 게임 시작
@@ -237,6 +280,10 @@ public class GameRoomView extends JFrame{
 		contentPane.remove(exitBtn);
 		
 		System.out.println("CLIENT "+myName+" GAME STARTED");
+		
+		// 채팅창 비활성화
+		btnSend.setEnabled(false);
+		btnSend.setBackground(btnDisable);
 		
 		// Map 그리기
 		mapPanel = new MapPanel(parent, gameMap, room.getKey(), myName);
@@ -300,6 +347,27 @@ public class GameRoomView extends JFrame{
 		// 남은 시간이 촉박할수록 배경색이 true RED에 가까워진다.
 		if(timeout<=10)
 			timerLabel.setBackground(new Color(240, 200-(10-timeout)*15, 200-(10-timeout)*15));
+		
+		if(timeout==0) {
+			// 모든 keyListener 해제
+			isStarted = false;
+			mapPanel.deleteKeyListener();
+
+			// Server에 알림
+			parent.SendObject(new ChatMsg(myName, C_ENDGAME, room.getKey()+""));
+			
+			// 3초 대기 후에 결과화면 호출
+			new Thread() {
+				public void run() {
+					try {
+						Thread.sleep(3000);
+						endGame();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}.start();
+		}
 		
 		contentPane.revalidate();
 		contentPane.repaint(); 
@@ -366,6 +434,118 @@ public class GameRoomView extends JFrame{
 		mapPanel.requestFocus();
 	}
 	
+	// 게임 종료
+	public void endGame() {
+		
+		// 채팅창 활성화
+		btnSend.setEnabled(true);
+		btnSend.setBackground(btnEnable);
+		
+		// 다 지우고
+		contentPane.remove(mapPanel);
+		contentPane.remove(timerLabel);
+
+		for (int i = 0; i < scores.size(); i++) {
+			UserScore userScore = scores.get(i);
+			JLabel scoreInfoLabel = scoreInfo.get(i);
+			JLabel tempNameLabel = userScore.getNameLabel();
+			JLabel tempScoreLabel = userScore.getScoreLabel();
+			
+			contentPane.remove(scoreInfoLabel);
+			contentPane.remove(tempNameLabel);
+			contentPane.remove(tempScoreLabel);
+		}
+		
+		// GAMEOVER 그리기
+		gameOver = new JLabel(new ImageIcon("res/gameResult/gameover.png"));
+		gameOver.setSize(255, 70);
+		gameOver.setLocation(415, 30);
+		gameOver.setHorizontalAlignment(JLabel.CENTER);
+		contentPane.add(gameOver);
+		
+		// 1~3위 계산
+		rankUsers = new Vector<JLabel>(3);
+		rankScore = new Vector<JLabel>(3);
+		Collections.sort(scores, new UserScoreComparator());
+		int max = (scores.size() > 3) ? 3 : scores.size();
+		for (int i = 0; i < max; i++) {
+			UserScore userScore = scores.get(i);
+			JLabel tempRankName = new JLabel(userScore.getUserName());
+			JLabel tempRankScore = new JLabel(userScore.getScore()+" pts");
+			rankUsers.add(tempRankName);
+			rankScore.add(tempRankScore);
+		}
+		
+		// 1위 위치 맞추기
+		rankUsers.get(0).setSize(210, 30);
+		rankUsers.get(0).setLocation(440, 125);
+		rankUsers.get(0).setHorizontalAlignment(JLabel.CENTER);
+		rankUsers.get(0).setFont(new Font("맑은 고딕", Font.BOLD, 25));
+		contentPane.add(rankUsers.get(0));
+		
+		rankScore.get(0).setSize(210, 45);
+		rankScore.get(0).setLocation(440, 160);
+		rankScore.get(0).setHorizontalAlignment(JLabel.CENTER);
+		rankScore.get(0).setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 40));
+		contentPane.add(rankScore.get(0));
+		
+		switch(max) {
+		case 3:		// 3위 위치 맞추기
+			rankUsers.get(2).setSize(210, 30);
+			rankUsers.get(2).setLocation(645, 220);
+			rankUsers.get(2).setHorizontalAlignment(JLabel.CENTER);
+			rankUsers.get(2).setFont(new Font("맑은 고딕", Font.BOLD, 25));
+			contentPane.add(rankUsers.get(2));
+			
+			rankScore.get(2).setSize(210, 45);
+			rankScore.get(2).setLocation(645, 255);
+			rankScore.get(2).setHorizontalAlignment(JLabel.CENTER);
+			rankScore.get(2).setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 40));
+			contentPane.add(rankScore.get(2));
+		case 2:		// 2위 위치 맞추기
+			rankUsers.get(1).setSize(210, 30);
+			rankUsers.get(1).setLocation(230, 200);
+			rankUsers.get(1).setHorizontalAlignment(JLabel.CENTER);
+			rankUsers.get(1).setFont(new Font("맑은 고딕", Font.BOLD, 25));
+			contentPane.add(rankUsers.get(1));
+			
+			rankScore.get(1).setSize(210, 45);
+			rankScore.get(1).setLocation(230, 235);
+			rankScore.get(1).setHorizontalAlignment(JLabel.CENTER);
+			rankScore.get(1).setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 40));
+			contentPane.add(rankScore.get(1));
+			break;
+		}
+
+		// 시상식 화면
+		rankBoard = new JLabel(new ImageIcon("res/gameResult/rankboard.png"));
+		rankBoard.setOpaque(true);
+		rankBoard.setSize(620, 200);
+		rankBoard.setLocation(235, 190);
+		contentPane.add(rankBoard);
+		
+		// 이 방에 남을건지 버튼
+		replay = new JButton(new ImageIcon("res/gameResult/replay.png"));
+		replay.setFocusPainted(false);
+		replay.setBorderPainted(false);
+		replay.setContentAreaFilled(false);
+		replay.setBounds(395, 405, 110, 60);
+		replay.addActionListener(new ReplayActionListener(room.getKey()));
+		contentPane.add(replay);
+		
+		// 아님 홈으로 가던가
+		goHome = new JButton(new ImageIcon("res/gameResult/home.png"));
+		goHome.setFocusPainted(false);
+		goHome.setBorderPainted(false);
+		goHome.setContentAreaFilled(false);
+		goHome.setBounds(605, 393, 110, 60);
+		goHome.addActionListener(new ExitActionListener(room.getKey()));
+		contentPane.add(goHome);
+		
+		contentPane.revalidate();
+		contentPane.repaint(); 
+	}
+	
 	// Server로부터 받은 이벤트 전달하기
 	public void doKeyEvent(String userName, int keyCode) {
 		mapPanel.doKeyEvent(userName, keyCode);
@@ -410,9 +590,9 @@ public class GameRoomView extends JFrame{
 		public void actionPerformed(ActionEvent e) {
 			parent.SendObject(new ChatMsg(myName, C_STRGAME, key+""));
 		}
-	} // End of class ReadyActionListener
+	} // End of class StartActionListener
 	
-	// StartBtn을 위한 EventListener - 버튼을 누르면 ready 상태를 체크하고 Game start
+	// ExitBtn을 위한 EventListener - 버튼을 누르면 WaitingView로 이동
 	class ExitActionListener implements ActionListener{
 		private int key;
 		public ExitActionListener(int key) {
@@ -421,7 +601,20 @@ public class GameRoomView extends JFrame{
 		public void actionPerformed(ActionEvent e) {
 			gameRoomView.setVisible(false);
 			parent.getWaitingView().setVisible(true);	
-			parent.SendObject(new ChatMsg(myName, C_EXITROOM, key+""));
+			parent.SendObject(new ChatMsg(myName, C_EXITROOM, key+" "+true));
 		}
-	} // End of class ReadyActionListener
+	} // End of class ExitActionListener
+	
+	// ReplayBtn을 위한 EventListener - 방에 재입장하도록
+	class ReplayActionListener implements ActionListener{
+		private int key;
+		public ReplayActionListener(int key) {
+			this.key = key;
+		}
+		public void actionPerformed(ActionEvent e) {
+			gameRoomView.setVisible(false);
+			parent.SendObject(new ChatMsg(myName, C_EXITROOM, key+" "+false));
+			parent.SendObject(new ChatMsg(myName, C_ENTROOM, key+""));		// 재입장
+		}
+	} // End of class ReplayActionListener
 }

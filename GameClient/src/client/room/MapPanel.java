@@ -42,6 +42,9 @@ public class MapPanel extends JPanel implements Serializable{
 	private WaitingView parent;
 	private int roomKey;
 	
+	// keyListener 활성화
+	private boolean enableKey = true;
+	
 	// item 정보
 	private Vector<Point> item = new Vector<Point>();
 	private ImageIcon iIcon = new ImageIcon("res/item.png");
@@ -56,6 +59,7 @@ public class MapPanel extends JPanel implements Serializable{
 	private Image bulletImg = new ImageIcon("res/bullet.png").getImage();
 	
 	// player 정보
+	private int myMove = 0;					// 움직임 overload 방지
 	private ImageIcon pIcon = new ImageIcon("res/smile.png");
 	private ImageIcon pIcon2 = new ImageIcon("res/smile2.png");
 	private Image player = pIcon.getImage();
@@ -146,29 +150,38 @@ public class MapPanel extends JPanel implements Serializable{
 
 	}
 	
+	// 게임 종료 후 keyListener 해제
+	public void deleteKeyListener() {
+		enableKey = false;
+	}
+	
 	// player를 움직이는 keyBoard callBack
 	class PlayerKeyboardListener extends KeyAdapter{
 		public void keyPressed(KeyEvent e) {
-			int keyCode = e.getKeyCode();
-			switch(keyCode) {
-				// 방향키이면 그냥 보내고
-				case KeyEvent.VK_UP:
-				case KeyEvent.VK_DOWN:
-				case KeyEvent.VK_LEFT:
-				case KeyEvent.VK_RIGHT:
-					parent.SendObject(new ChatMsg(myName, C_UPDGAME, roomKey+"", keyCode));
-					break;
-	
-				// Bullet이면 정해진 횟수 내에서만 보내기	
-				case KeyEvent.VK_W:
-				case KeyEvent.VK_S:
-				case KeyEvent.VK_A:
-				case KeyEvent.VK_D:
-					if (myBullet < MAX_BULLET) {
-						parent.SendObject(new ChatMsg(myName, C_UPDGAME, roomKey+"", keyCode));
-						myBullet++;
-					}
-					break;
+			if(enableKey) {
+				int keyCode = e.getKeyCode();
+				//정해진 횟수 내에서만 보내기	
+				switch(keyCode) {
+					case KeyEvent.VK_UP:
+					case KeyEvent.VK_DOWN:
+					case KeyEvent.VK_LEFT:
+					case KeyEvent.VK_RIGHT:
+						if (myMove == 0) {
+							parent.SendObject(new ChatMsg(myName, C_UPDGAME, roomKey+"", keyCode));
+							myMove++;
+						}
+						break;
+		
+					case KeyEvent.VK_W:
+					case KeyEvent.VK_S:
+					case KeyEvent.VK_A:
+					case KeyEvent.VK_D:
+						if (myBullet < MAX_BULLET) {
+							parent.SendObject(new ChatMsg(myName, C_UPDGAME, roomKey+"", keyCode));
+							myBullet++;
+						}
+						break;
+				}
 			}
 		}
 	}
@@ -177,6 +190,8 @@ public class MapPanel extends JPanel implements Serializable{
 	public void doKeyEvent(String userName, int keyCode) {
 		Point coordinate = playerXY.get(userName);
 		System.out.println(userName + " :: " + coordinate.x + ", " + coordinate.y + ", " + keyCode);
+		
+		if (myMove == 1)	myMove--;	// 움직임 처리 했으니까
 		
 		// 화살표의 방향에 따라 움직이기
 		switch(keyCode) {

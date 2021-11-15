@@ -11,7 +11,7 @@ public class ChatMsg implements Serializable {
 	private String id;
 	private String code;
 	private String data;
-	public ImageIcon img;
+	private ImageIcon img;
 
 	private int numCode;
 
@@ -28,6 +28,13 @@ public class ChatMsg implements Serializable {
 		this.code = code;
 		this.data = data;
 		this.numCode = numCode;
+	}
+	
+	// Image
+	public ChatMsg(String id, String code, ImageIcon img) {
+		this.id = id;
+		this.code = code;
+		this.img = img;
 	}
 
 	public String getCode() {
@@ -48,6 +55,10 @@ public class ChatMsg implements Serializable {
 	
 	public int getNumCode() {
 		return numCode;
+	}
+	
+	public ImageIcon getImg() {
+		return img;
 	}
 
 	public void setId(String id) {

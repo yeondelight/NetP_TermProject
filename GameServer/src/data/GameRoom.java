@@ -11,7 +11,7 @@ public class GameRoom implements Serializable{
 	
 	private static final long serialVersionUID = 2L;
 	
-	private final static int MAXPLAYER = 4;
+	public final static int MAXPLAYER = 4;
 	private final static String AVAIL = "AVAIL";
 	private final static String FULL = "FULL";
 	private final static String STARTED = "STARTED";
@@ -75,7 +75,7 @@ public class GameRoom implements Serializable{
 	// player exit
 	public int exitUser(String userName) {
 		userList.remove(userName);
-		if(userList.size() < MAXPLAYER)
+		if(userList.size() < MAXPLAYER && status!=STARTED)
 			setStatus(AVAIL);
 		
 		return userList.size();
