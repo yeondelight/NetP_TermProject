@@ -224,7 +224,7 @@ public class MapPanel extends JPanel implements Serializable{
 			if(!userName.equals(myName)) {
 				if(coordinate.x == x && coordinate.y == y) {
 					parent.SendObject(new ChatMsg(userName, C_UPDSCORE, roomKey + " " + "-", 5));
-					System.out.println(userName+" WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					//System.out.println(userName+" WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 				}
 			}
 		}
