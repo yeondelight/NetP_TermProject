@@ -36,6 +36,8 @@ public class MapPanel extends JPanel implements Serializable{
 	private boolean gameover = false;	// game 결과
 	private PlayerKeyboardListener pListener;
 	
+	private MapPanel mapPanel;
+	
 	// Server와의 통신을 위한 parent
 	private WaitingView parent;
 	private int roomKey;
@@ -69,6 +71,7 @@ public class MapPanel extends JPanel implements Serializable{
 
 	// num에 따라 그에 맞는 미로 Map을 만드는 생성자
 	public MapPanel(WaitingView parent, GameMap gameMap, int roomKey, String myName){
+		mapPanel = this;
 		this.parent = parent;
 		this.roomKey = roomKey;
 		this.myName = myName;
@@ -146,7 +149,27 @@ public class MapPanel extends JPanel implements Serializable{
 	// player를 움직이는 keyBoard callBack
 	class PlayerKeyboardListener extends KeyAdapter{
 		public void keyPressed(KeyEvent e) {
-			parent.SendObject(new ChatMsg(myName, C_UPDGAME, roomKey+"", e.getKeyCode()));
+			int keyCode = e.getKeyCode();
+			switch(keyCode) {
+				// 방향키이면 그냥 보내고
+				case KeyEvent.VK_UP:
+				case KeyEvent.VK_DOWN:
+				case KeyEvent.VK_LEFT:
+				case KeyEvent.VK_RIGHT:
+					parent.SendObject(new ChatMsg(myName, C_UPDGAME, roomKey+"", keyCode));
+					break;
+	
+				// Bullet이면 정해진 횟수 내에서만 보내기	
+				case KeyEvent.VK_W:
+				case KeyEvent.VK_S:
+				case KeyEvent.VK_A:
+				case KeyEvent.VK_D:
+					if (myBullet < MAX_BULLET) {
+						parent.SendObject(new ChatMsg(myName, C_UPDGAME, roomKey+"", keyCode));
+						myBullet++;
+					}
+					break;
+			}
 		}
 	}
 	
@@ -176,36 +199,24 @@ public class MapPanel extends JPanel implements Serializable{
 			
 		// bullet : MAX_BULLET 이하일때만 쏠 수 있다.
 		case KeyEvent.VK_W:
-			if (myBullet < MAX_BULLET) {
-				bullet = new Point(coordinate.x, coordinate.y);
-				bulletThread = new BulletThread(this, bullet, 0, -1);
-				bulletThread.start();
-				myBullet++;
-			}
+			bullet = new Point(coordinate.x, coordinate.y);
+			bulletThread = new BulletThread(mapPanel, bullet, 0, -1);
+			bulletThread.start();
 			break;
 		case KeyEvent.VK_S:
-			if (myBullet < MAX_BULLET) {
-				bullet = new Point(coordinate.x, coordinate.y);
-				bulletThread = new BulletThread(this, bullet, 0, 1);
-				bulletThread.start();
-				myBullet++;
-			}
+			bullet = new Point(coordinate.x, coordinate.y);
+			bulletThread = new BulletThread(mapPanel, bullet, 0, 1);
+			bulletThread.start();
 			break;
 		case KeyEvent.VK_A:
-			if (myBullet < MAX_BULLET) {
-				bullet = new Point(coordinate.x, coordinate.y);
-				bulletThread = new BulletThread(this, bullet, -1, 0);
-				bulletThread.start();
-				myBullet++;
-			}
+			bullet = new Point(coordinate.x, coordinate.y);
+			bulletThread = new BulletThread(mapPanel, bullet, -1, 0);
+			bulletThread.start();
 			break;
 		case KeyEvent.VK_D:
-			if (myBullet < MAX_BULLET) {
-				bullet = new Point(coordinate.x, coordinate.y);
-				bulletThread = new BulletThread(this, bullet, 1, 0);
-				bulletThread.start();
-				myBullet++;
-			}
+			bullet = new Point(coordinate.x, coordinate.y);
+			bulletThread = new BulletThread(mapPanel, bullet, 1, 0);
+			bulletThread.start();
 			break;
 		}
 		

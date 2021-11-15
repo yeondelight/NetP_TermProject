@@ -227,11 +227,14 @@ public class GameRoomView extends JFrame{
 	// GameView를 새롭게 그리고 update요청
 	public void startGame(GameMap gameMap) {
 		isStarted = true;
+		
 		for (int i = 0; i < readyBtn.size(); i++) {
 			contentPane.remove(readyBtn.get(i));
 		}
 		startBtn.setEnabled(false);
 		startBtn.setBackground(btnDisable);
+		
+		contentPane.remove(exitBtn);
 		
 		System.out.println("CLIENT "+myName+" GAME STARTED");
 		
