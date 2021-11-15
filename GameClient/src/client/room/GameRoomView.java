@@ -32,8 +32,10 @@ public class GameRoomView extends JFrame{
 	
 	private static final String C_UPDROOM = "302";
 	private static final String C_STRGAME = "304";
+	private static final String C_EXITROOM = "308";
 	
 	private WaitingView parent;
+	private GameRoomView gameRoomView;
 	private GameRoom room;
 
 	private Container contentPane;
@@ -43,6 +45,7 @@ public class GameRoomView extends JFrame{
 	private JTextArea textArea;
 	private JButton btnSend;
 	private JButton startBtn;
+	private JButton exitBtn;
 	
 	private String myName;
 	
@@ -72,6 +75,7 @@ public class GameRoomView extends JFrame{
 	public GameRoomView(WaitingView parent, GameRoom room) {
 		this.parent = parent;
 		this.room = room;
+		gameRoomView = this;
 		myName = parent.getMyName();
 		
 		// 기본 설정
@@ -87,6 +91,13 @@ public class GameRoomView extends JFrame{
 		roomTitle.setBackground(btnDisable);
 		roomTitle.setFont(new Font("맑은 고딕", Font.BOLD, 15));
 		contentPane.add(roomTitle);
+		
+		exitBtn = new JButton(new ImageIcon("res/exit.png"));
+		exitBtn.setFocusPainted(false);
+		exitBtn.setBorderPainted(false);
+		exitBtn.setContentAreaFilled(false);
+		exitBtn.setBounds(760, 10, 115, 30);
+		contentPane.add(exitBtn);
 		
 		startBtn = new JButton("START");
 		startBtn.setOpaque(true);
@@ -138,6 +149,7 @@ public class GameRoomView extends JFrame{
 		btnSend.addActionListener(action);
 		txtInput.addActionListener(action);
 		startBtn.addActionListener(new StartActionListener(room.getKey()));
+		exitBtn.addActionListener(new ExitActionListener(room.getKey()));
 
 		// Frame 크기 설정
 		setSize(900, 500);
@@ -215,11 +227,14 @@ public class GameRoomView extends JFrame{
 	// GameView를 새롭게 그리고 update요청
 	public void startGame(GameMap gameMap) {
 		isStarted = true;
+		
 		for (int i = 0; i < readyBtn.size(); i++) {
 			contentPane.remove(readyBtn.get(i));
 		}
 		startBtn.setEnabled(false);
 		startBtn.setBackground(btnDisable);
+		
+		contentPane.remove(exitBtn);
 		
 		System.out.println("CLIENT "+myName+" GAME STARTED");
 		
@@ -394,6 +409,19 @@ public class GameRoomView extends JFrame{
 		}
 		public void actionPerformed(ActionEvent e) {
 			parent.SendObject(new ChatMsg(myName, C_STRGAME, key+""));
+		}
+	} // End of class ReadyActionListener
+	
+	// StartBtn을 위한 EventListener - 버튼을 누르면 ready 상태를 체크하고 Game start
+	class ExitActionListener implements ActionListener{
+		private int key;
+		public ExitActionListener(int key) {
+			this.key = key;
+		}
+		public void actionPerformed(ActionEvent e) {
+			gameRoomView.setVisible(false);
+			parent.getWaitingView().setVisible(true);	
+			parent.SendObject(new ChatMsg(myName, C_EXITROOM, key+""));
 		}
 	} // End of class ReadyActionListener
 }

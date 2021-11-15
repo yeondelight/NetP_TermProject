@@ -178,6 +178,7 @@ public class GameServer extends JFrame{
 		private static final String C_STRGAME = "304";		// C->S 게임 시작할래
 		private static final String C_UPDGAME = "305";		// Client -> Server 움직임 알림
 		private static final String C_UPDSCORE = "307";		// Client -> Server 점수 변경 알림
+		private static final String C_EXITROOM = "308";		// Client -> Server 나 나갈래
 		
 		private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
 		private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
@@ -338,6 +339,11 @@ public class GameServer extends JFrame{
 		// GameRoom 입장 처리
 		public void enterRoom(GameRoom gameRoom) {
 			this.gameRoom = gameRoom;
+		}
+		
+		// GameRoom 퇴장 처리
+		public void exitRoom() {
+			this.gameRoom = null;
 		}
 		
 		// UserName으로 해당 User의 Status 찾기
@@ -547,6 +553,19 @@ public class GameServer extends JFrame{
 						GameRoom room = roomManager.getRoom(key);
 						Integer score = cm.getNumCode();
 						WriteRoomObject(key, new ChatMsg(cm.getId(), S_UPDSCORE, cm.getData(), score));
+					}
+					
+					// C_EXITROOM(308)
+					// Client -> Server 나 이 방 나갈래
+					// new ChatMsg(USERNAME, 308, roomKey) 형태
+					else if (cm.getCode().matches(C_EXITROOM)) {
+						int key = Integer.parseInt(cm.getData());
+						GameRoom room = roomManager.getRoom(key);
+						this.exitRoom();
+						this.setUserStatus(ONLINE);
+						room.exitUser(UserName);
+						WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));				// 퇴장 후 방의 상태가 변경될 수 있으므로
+						WriteRoomObject(key, new ChatMsg(UserName, S_UPDROOM, room.getUserList().size()+""));	// user가 나갔으므로
 					}
 					
 					// exit 처리
