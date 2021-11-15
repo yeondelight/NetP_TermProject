@@ -75,6 +75,9 @@ public class GameRoom implements Serializable{
 	// player exit
 	public int exitUser(String userName) {
 		userList.remove(userName);
+		if(userList.size() < MAXPLAYER)
+			setStatus(AVAIL);
+		
 		return userList.size();
 	}
 

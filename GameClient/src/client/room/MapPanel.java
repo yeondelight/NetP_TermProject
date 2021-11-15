@@ -46,11 +46,12 @@ public class MapPanel extends JPanel implements Serializable{
 	private Image itemImg = iIcon.getImage();
 	
 	//bullet
-	private Vector<Point> bullet_location = new Vector<Point>();
+	private static final int MAX_BULLET = 1;		// 최대로 bullet을 쏠 수 있는 횟수
+	private int myBullet = 0;						// 나는 몇번 쐈을까?
 	private Point bullet = null;
-	private ImageIcon bIcon = new ImageIcon("res/bullet.png");
-	private Image bulletImg = bIcon.getImage();
 	private BulletThread bulletThread = null;
+	private Vector<Point> bullet_location = new Vector<Point>();
+	private Image bulletImg = new ImageIcon("res/bullet.png").getImage();
 	
 	// player 정보
 	private ImageIcon pIcon = new ImageIcon("res/smile.png");
@@ -135,7 +136,7 @@ public class MapPanel extends JPanel implements Serializable{
 		
 		// bullet 그리기
 		for(Point p: bullet_location) {
-			graphics2.drawImage(bulletImg, p.x, p.y, this);
+			graphics2.drawImage(bulletImg, p.x, p.y, UNIT, UNIT, this);
 		}
 		
 		g.drawImage(panelImage, 0, 0, this);
@@ -173,26 +174,38 @@ public class MapPanel extends JPanel implements Serializable{
 				coordinate.x += UNIT;
 			break;
 			
-		// bullet
+		// bullet : MAX_BULLET 이하일때만 쏠 수 있다.
 		case KeyEvent.VK_W:
-			bullet = new Point(coordinate.x, coordinate.y);
-			bulletThread = new BulletThread(this, bullet, 0, -1);
-			bulletThread.start();
+			if (myBullet < MAX_BULLET) {
+				bullet = new Point(coordinate.x, coordinate.y);
+				bulletThread = new BulletThread(this, bullet, 0, -1);
+				bulletThread.start();
+				myBullet++;
+			}
 			break;
 		case KeyEvent.VK_S:
-			bullet = new Point(coordinate.x, coordinate.y);
-			bulletThread = new BulletThread(this, bullet, 0, 1);
-			bulletThread.start();
+			if (myBullet < MAX_BULLET) {
+				bullet = new Point(coordinate.x, coordinate.y);
+				bulletThread = new BulletThread(this, bullet, 0, 1);
+				bulletThread.start();
+				myBullet++;
+			}
 			break;
 		case KeyEvent.VK_A:
-			bullet = new Point(coordinate.x, coordinate.y);
-			bulletThread = new BulletThread(this, bullet, -1, 0);
-			bulletThread.start();
+			if (myBullet < MAX_BULLET) {
+				bullet = new Point(coordinate.x, coordinate.y);
+				bulletThread = new BulletThread(this, bullet, -1, 0);
+				bulletThread.start();
+				myBullet++;
+			}
 			break;
 		case KeyEvent.VK_D:
-			bullet = new Point(coordinate.x, coordinate.y);
-			bulletThread = new BulletThread(this, bullet, 1, 0);
-			bulletThread.start();
+			if (myBullet < MAX_BULLET) {
+				bullet = new Point(coordinate.x, coordinate.y);
+				bulletThread = new BulletThread(this, bullet, 1, 0);
+				bulletThread.start();
+				myBullet++;
+			}
 			break;
 		}
 		
@@ -224,7 +237,6 @@ public class MapPanel extends JPanel implements Serializable{
 			if(!userName.equals(myName)) {
 				if(coordinate.x == x && coordinate.y == y) {
 					parent.SendObject(new ChatMsg(userName, C_UPDSCORE, roomKey + " " + "-", 5));
-					//System.out.println(userName+" WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 				}
 			}
 		}
@@ -233,73 +245,73 @@ public class MapPanel extends JPanel implements Serializable{
 	}
 	public synchronized void bulletRemove(int x, int y) {
 		bullet_location.remove(new Point(x,y));
+		myBullet--;		// 맞았으므로 다시 쏠 수 있는 횟수 증가.
 		repaint();
 	}
+	
 
-}
-
-class BulletThread extends Thread {
-	private final int UNIT = 20;	// map의 한 칸의 길이 (pixel)
-	private MapPanel mapPanel = null;
-	private Point bullet = null;
-	private int change_x;
-	private int change_y;
-	//private BulletRunnable bulletRunnable = null;
-	
-	public BulletThread(MapPanel mapPanel, Point bullet, int change_x, int change_y) {
-		this.mapPanel = mapPanel;
-		this.bullet = bullet;
-		this.change_x=change_x;
-		this.change_y=change_y;
-	}
-	
-	
-	public void run() {
-		while(true) {
-			if(change_y < 0) {
-				if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) != 1 && bullet.y > 0) {
-					bullet.y -= UNIT;
-					mapPanel.bulletRepaint(bullet.x, bullet.y);
-				} 
-				else if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) == 1) {
-					mapPanel.bulletRemove(bullet.x, bullet.y);
-					return;
-				}
-			}
-			else if(change_y > 0) {
-				if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) != 1 && bullet.y < 460) {
-					bullet.y += UNIT;
-					mapPanel.bulletRepaint(bullet.x, bullet.y);
-				} 
-				else if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) == 1) {
-					mapPanel.bulletRemove(bullet.x, bullet.y);
-					return;
-				}
-			}
-			else if(change_x < 0) {
-				if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) != 1 && bullet.x > 0) {
-					bullet.x -= UNIT;
-					mapPanel.bulletRepaint(bullet.x, bullet.y);
-				} 
-				else if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) == 1) {
-					mapPanel.bulletRemove(bullet.x, bullet.y);
-					return;
-				}
-			}
-			else if(change_x > 0) {
-				if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) != 1 && bullet.x < 460) {
-					bullet.x += UNIT;
-					mapPanel.bulletRepaint(bullet.x, bullet.y);
-				} 
-				else if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) == 1) {
-					mapPanel.bulletRemove(bullet.x, bullet.y);
-					return;
-				}
-			}
-			 
-			try { sleep(20); } catch (InterruptedException e) {e.printStackTrace();}
-			mapPanel.bulletRemove(bullet.x, bullet.y);
+	class BulletThread extends Thread {
+		private MapPanel mapPanel = null;
+		private Point bullet = null;
+		private int change_x;
+		private int change_y;
+		//private BulletRunnable bulletRunnable = null;
+		
+		public BulletThread(MapPanel mapPanel, Point bullet, int change_x, int change_y) {
+			this.mapPanel = mapPanel;
+			this.bullet = bullet;
+			this.change_x=change_x;
+			this.change_y=change_y;
 		}
-	 } // end of run
-	
-}// end of BulletThread
+		
+		
+		public void run() {
+			while(true) {
+				if(change_y < 0) {
+					if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) != 1 && bullet.y > 0) {
+						bullet.y -= UNIT;
+						mapPanel.bulletRepaint(bullet.x, bullet.y);
+					} 
+					else if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) == 1) {
+						mapPanel.bulletRemove(bullet.x, bullet.y);
+						return;
+					}
+				}
+				else if(change_y > 0) {
+					if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) != 1 && bullet.y < 460) {
+						bullet.y += UNIT;
+						mapPanel.bulletRepaint(bullet.x, bullet.y);
+					} 
+					else if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) == 1) {
+						mapPanel.bulletRemove(bullet.x, bullet.y);
+						return;
+					}
+				}
+				else if(change_x < 0) {
+					if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) != 1 && bullet.x > 0) {
+						bullet.x -= UNIT;
+						mapPanel.bulletRepaint(bullet.x, bullet.y);
+					} 
+					else if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) == 1) {
+						mapPanel.bulletRemove(bullet.x, bullet.y);
+						return;
+					}
+				}
+				else if(change_x > 0) {
+					if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) != 1 && bullet.x < 460) {
+						bullet.x += UNIT;
+						mapPanel.bulletRepaint(bullet.x, bullet.y);
+					} 
+					else if(mapPanel.getXY(bullet.x/UNIT + change_x, bullet.y/UNIT + change_y) == 1) {
+						mapPanel.bulletRemove(bullet.x, bullet.y);
+						return;
+					}
+				}
+				 
+				try { sleep(20); } catch (InterruptedException e) {e.printStackTrace();}
+				mapPanel.bulletRemove(bullet.x, bullet.y);
+			}
+		 } // end of run
+		
+	}// end of BulletThread
+}

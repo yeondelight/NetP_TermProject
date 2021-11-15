@@ -47,6 +47,7 @@ public class WaitingView extends JFrame{
 	private static final String C_STRGAME = "304";		// C->S 게임 시작할래
 	private static final String C_UPDGAME = "305";		// Client -> Server 움직임 알림
 	private static final String C_UPDSCORE = "307";		// Client -> Server 점수 변경 알림
+	private static final String C_EXITROOM = "308";
 	
 	private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
 	private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
