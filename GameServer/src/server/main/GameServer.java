@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -179,6 +180,7 @@ public class GameServer extends JFrame{
 		private static final String C_UPDGAME = "305";		// Client -> Server 움직임 알림
 		private static final String C_UPDSCORE = "307";		// Client -> Server 점수 변경 알림
 		private static final String C_EXITROOM = "308";		// Client -> Server 나 나갈래
+		private static final String C_ENDGAME = "309";		// Client -> Server 게임 끝났어
 		
 		private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
 		private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
@@ -557,15 +559,39 @@ public class GameServer extends JFrame{
 					
 					// C_EXITROOM(308)
 					// Client -> Server 나 이 방 나갈래
-					// new ChatMsg(USERNAME, 308, roomKey) 형태
+					// new ChatMsg(USERNAME, 308, roomKey WaitingViewrefresh여부) 형태
 					else if (cm.getCode().matches(C_EXITROOM)) {
-						int key = Integer.parseInt(cm.getData());
+						String val[] = cm.getData().split(" ");
+						int key = Integer.parseInt(val[0]);
+						boolean refresh = Boolean.parseBoolean(val[1]);
 						GameRoom room = roomManager.getRoom(key);
 						this.exitRoom();
 						this.setUserStatus(ONLINE);
 						room.exitUser(UserName);
-						WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));				// 퇴장 후 방의 상태가 변경될 수 있으므로
 						WriteRoomObject(key, new ChatMsg(UserName, S_UPDROOM, room.getUserList().size()+""));	// user가 나갔으므로
+						if (refresh)					// 퇴장 후 방의 상태가 변경될 수 있으므로. 그러나 바로 재입장하는 경우를 고려해 true일때만 변경한다.
+							WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));
+					}
+					
+					// C_ENDGAME(309)
+					// Client -> Server 게임 끝났어
+					// new ChatMsg(USERNAME, 308, roomKey) 형태
+					else if (cm.getCode().matches(C_ENDGAME)) {
+						int key = Integer.parseInt(cm.getData());
+						GameRoom room = roomManager.getRoom(key);
+						
+						// GameOver를 알리는 이미지 전송
+						ChatMsg serverMsg = new ChatMsg("SERVER", S_CHATMSG, new ImageIcon("res/gameoverMsg.png"));
+						WriteOneObject(serverMsg);
+						
+						this.exitRoom();
+						this.setUserStatus(ONLINE);
+						room.exitUser(UserName);
+						
+						if(room.getUserList().size() < room.MAXPLAYER)
+							room.setStatus(AVAIL);
+						else
+							room.setStatus(FULL);
 					}
 					
 					// exit 처리
@@ -592,11 +618,12 @@ public class GameServer extends JFrame{
 						client_socket.close();
 						if(this.getGameRoom()!=null) {		// 게임방에 있는 경우
 							int pNum = gameRoom.exitUser(this.UserName);
-							if(this.getGameRoom().getStatus().equals(STARTED))
-								// 게임중의 user 이탈 처리
-								System.out.println("USER EXITED");
+							if(this.getGameRoom().getStatus().equals(STARTED)) {
+								this.exitRoom();
+								this.getGameRoom().exitUser(UserName);
+							}
 							else
-								WriteRoomObject(gameRoom.getKey(), new ChatMsg(UserName, S_UPDROOM, pNum+""));		// 게임방에서 해당 user를 제거한다.
+								WriteRoomObject(gameRoom.getKey(), new ChatMsg(UserName, S_UPDROOM, pNum+""));		// 게임방에서 해당 user를 제거한다.	
 							WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));			// WaitingView를 update 한다.
 						}
 						UserVec.removeElement(this); // 에러가난 현재 객체를 벡터에서 지운다

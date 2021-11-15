@@ -239,7 +239,11 @@ public class WaitingView extends JFrame{
 						// S_CHATMSG(310)
 						// Server -> Client GameRoom 내의 User가 보낸 메세지 수신
 						else if(ccode.equals(S_CHATMSG)) {
-							gameRoomView.AppendText("[" + cm.getId() + "] " + cm.getData());
+							// Server가 보낸 메세지의 경우
+							if(cm.getId().equals("SERVER"))
+								gameRoomView.AppendImage(cm.getImg());
+							else
+								gameRoomView.AppendText("[" + cm.getId() + "] " + cm.getData());
 						}
 						
 						// S_UPDROOM(320)
