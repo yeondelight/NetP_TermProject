@@ -44,6 +44,12 @@ public class MapPanel extends JPanel implements Serializable{
 	private Vector<Point> item = new Vector<Point>();
 	private ImageIcon iIcon = new ImageIcon("res/item.png");
 	private Image itemImg = iIcon.getImage();
+
+	// ghost 정보
+	private Vector<Point> ghost = new Vector<Point>();
+	private ImageIcon gIcon = new ImageIcon("res/ghost.png");
+	private Image ghostImg = gIcon.getImage();
+	private GhostThread ghostThread = null;
 	
 	//bullet
 	private Vector<Point> bullet_location = new Vector<Point>();
@@ -74,6 +80,7 @@ public class MapPanel extends JPanel implements Serializable{
 		
 		map = gameMap.getMap();
 		item = gameMap.getItem();
+		ghost = gameMap.getGhost();
 		playerXY = gameMap.getPlayerXY();
 
 		setLayout(null);
@@ -83,6 +90,12 @@ public class MapPanel extends JPanel implements Serializable{
 		
 		pListener = new PlayerKeyboardListener();
 		addKeyListener(pListener);
+		
+
+		for(Point ghostI: ghost) { 
+			ghostThread = new GhostThread(this, ghostI);
+			ghostThread.start(); 
+		}
 	}
 	
 	// row, col의 좌표에 대해 길인지 벽인지 검사하는 함수
@@ -121,6 +134,12 @@ public class MapPanel extends JPanel implements Serializable{
 			Point p = item.get(i);
 			graphics2.drawImage(itemImg, p.x*UNIT, p.y*UNIT, UNIT, UNIT, this);
 		}
+		
+		// ghost 그리기
+		for(int i = 0; i < ghost.size(); i++) {
+			Point g1 = ghost.get(i);
+			graphics2.drawImage(ghostImg, g1.x*UNIT, g1.y*UNIT, UNIT, UNIT, this);
+		}		
 
 		// player 그리기
 		Iterator<String> it = playerXY.keySet().iterator();
@@ -224,7 +243,6 @@ public class MapPanel extends JPanel implements Serializable{
 			if(!userName.equals(myName)) {
 				if(coordinate.x == x && coordinate.y == y) {
 					parent.SendObject(new ChatMsg(userName, C_UPDSCORE, roomKey + " " + "-", 5));
-					//System.out.println(userName+" WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 				}
 			}
 		}
@@ -236,6 +254,36 @@ public class MapPanel extends JPanel implements Serializable{
 		repaint();
 	}
 
+	public synchronized boolean checkLocationWithBullet(Point point) {
+		//bullet과 위치가 같다면
+		for(Point bullet : bullet_location) {
+			if(bullet.x == point.x*UNIT && bullet.y == point.y*UNIT) {
+				return true;
+			}
+		}
+		return false;
+	}
+	public synchronized boolean checkLocationWithUser(Point point) {
+		// 나와 위치가 같으면 점수깍기 // 서버에게 맞음을 알린다
+		Iterator<String> it = playerXY.keySet().iterator();
+		while(it.hasNext()) {
+			String userName = it.next();
+			Point coordinate = playerXY.get(userName);
+			if(userName.equals(myName)) {
+				if(coordinate.x == point.x*UNIT && coordinate.y == point.y*UNIT) {
+					parent.SendObject(new ChatMsg(userName, C_UPDSCORE, roomKey + " " + "-", 5));
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	public synchronized void removeGhost(Point point) {
+		// 스레드 없어지고, 고스트 벡터에도 사라지고
+		ghost.remove(point);
+		repaint();
+	}
+
 }
 
 class BulletThread extends Thread {
@@ -244,7 +292,6 @@ class BulletThread extends Thread {
 	private Point bullet = null;
 	private int change_x;
 	private int change_y;
-	//private BulletRunnable bulletRunnable = null;
 	
 	public BulletThread(MapPanel mapPanel, Point bullet, int change_x, int change_y) {
 		this.mapPanel = mapPanel;
@@ -252,7 +299,6 @@ class BulletThread extends Thread {
 		this.change_x=change_x;
 		this.change_y=change_y;
 	}
-	
 	
 	public void run() {
 		while(true) {
@@ -303,3 +349,94 @@ class BulletThread extends Thread {
 	 } // end of run
 	
 }// end of BulletThread
+
+class GhostThread extends Thread {
+	private final int UNIT = 20;	// map의 한 칸의 길이 (pixel)
+	private MapPanel mapPanel = null;
+	private Point ghost = null;
+	private boolean goUp = false;
+	private boolean goDown = false;
+	private boolean goLeft = false;
+	private boolean goRight = false;
+
+	public GhostThread(MapPanel mapPanel, Point ghost) {
+		this.mapPanel = mapPanel;
+		this.ghost = ghost;
+		movingdirection(ghost);
+	}
+	
+	private void movingdirection(Point ghost) {
+		// ghost가 사방으로 다 갈 수 있을때는..........어떻게 할까요......
+		if(mapPanel.getXY(ghost.x, ghost.y - 1)!=1 && ghost.y > 0) { // ghost가 위로 갈 때 벽이 없으면 -> 위아래로 이동
+			goUp = true;
+			return;
+		}
+		else if (mapPanel.getXY(ghost.x, ghost.y + 1)!=1 && ghost.y < 460) { // ghost가 아래로 갈 때 벽이 없으면 -> 위아래로 이동
+			goDown = true;
+			return;
+		}
+		else if (mapPanel.getXY(ghost.x - 1, ghost.y)!=1 && ghost.x > 0) { // ghost가 왼쪽으로 갈 때 벽이 없으면 -> 옆으로 이동
+			goLeft = true;
+			return;
+		}
+		else if (mapPanel.getXY(ghost.x + 1, ghost.y)!=1 && ghost.x < 460) {
+			goRight = true;
+			return;
+		}
+	}
+
+	@Override
+	public void run() {
+		while(true) {
+			if(mapPanel.checkLocationWithBullet(ghost)) { // bullet과 위치가 같다면	// 이거 잘 안맞아ㅠㅠㅠㅠㅠㅠ
+				mapPanel.removeGhost(ghost); // ghostThread 종료, ghost 벡터도 remove
+				return;
+			}
+			else if(mapPanel.checkLocationWithUser(ghost)){ // 사용자와 위치가 같다면 점수깍기				
+				try { sleep(800); } catch (InterruptedException e) {e.printStackTrace();}
+				continue;
+			}
+			else // 조건에 맞지 않는다면 움직여라
+				moveGhost(ghost);
+			
+			try { sleep(200); } catch (InterruptedException e) {e.printStackTrace();}
+		}
+	}
+
+	private void moveGhost(Point point) {
+		if(goUp) {
+			if(mapPanel.getXY(ghost.x, ghost.y - 1)==1 || ghost.y <= 0) {
+				goUp = false;
+				goDown = true;
+				return;
+			}
+			ghost.y -= 1;
+		}
+		else if(goDown) {
+			if(mapPanel.getXY(ghost.x, ghost.y + 1)==1 || ghost.y >= 460) {
+				goDown = false;
+				goUp = true;
+				return;
+			}
+			ghost.y += 1;
+		}
+		else if(goLeft) {
+			if(mapPanel.getXY(ghost.x - 1, ghost.y)==1 || ghost.x <= 0) {
+				goLeft = false;
+				goRight = true;
+				return;
+			}
+			ghost.x -= 1;
+		}
+		else if(goRight) {
+			if(mapPanel.getXY(ghost.x + 1, ghost.y)==1 || ghost.x >= 460) {
+				goRight = false;
+				goLeft = true;
+				return;
+			}
+			ghost.x += 1;
+		}
+		mapPanel.repaint();
+	}
+	
+}// end of GhostThread
