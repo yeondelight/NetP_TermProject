@@ -55,6 +55,7 @@ public class MapPanel extends JPanel implements Serializable{
 	private ImageIcon gIcon = new ImageIcon("res/ghost.png");
 	private Image ghostImg = gIcon.getImage();
 	private GhostThread ghostThread = null;
+	private Vector<GhostThread> vectorGhost = new Vector<GhostThread>();
 	
 	//bullet
 	private static final int MAX_BULLET = 1;		// 최대로 bullet을 쏠 수 있는 횟수
@@ -99,9 +100,10 @@ public class MapPanel extends JPanel implements Serializable{
 		pListener = new PlayerKeyboardListener();
 		addKeyListener(pListener);
 		
-		for(Point ghostI: ghost) { 
+		for(Point ghostI: ghost) {
 			ghostThread = new GhostThread(this, ghostI);
-			ghostThread.start(); 
+			ghostThread.start();
+			vectorGhost.add(ghostThread);
 		}
 	}
 	
@@ -284,6 +286,23 @@ public class MapPanel extends JPanel implements Serializable{
 				}
 			}
 		}
+		
+		// ghost를 맞추면 없앰
+		int gcnt=1;
+		for(Point ghost_p : ghost) {
+			if(bullet.x == ghost_p.x*UNIT && bullet.y == ghost_p.y*UNIT) {
+				for(GhostThread g : vectorGhost) {
+					String threadName = "Thread-"+String.valueOf(gcnt);
+					if(g.getName().equals(threadName)) {
+						g.interrupt();
+						vectorGhost.remove(g);
+						ghost.remove(ghost_p);
+						return;
+					}
+				}
+			}
+			gcnt++;
+		}
 				
 		repaint();
 	}
@@ -424,19 +443,15 @@ public class MapPanel extends JPanel implements Serializable{
 		@Override
 		public void run() {
 			while(true) {
-				if(mapPanel.checkLocationWithBullet(ghost)) { // bullet과 위치가 같다면
-					mapPanel.removeGhost(ghost); // ghostThread 종료, ghost 벡터도 remove
-					return;
-				}
-				else if(mapPanel.checkLocationWithUser(ghost)){ // 사용자와 위치가 같다면 점수깍기				
+				if(mapPanel.checkLocationWithUser(ghost)){ // 사용자와 위치가 같다면 점수깍기				
 					try { sleep(800); } catch (InterruptedException e) {e.printStackTrace();}
 					continue;
 				}
 				else // 조건에 맞지 않는다면 움직여라
 					moveGhost(ghost);
 				
-				try { sleep(200); } catch (InterruptedException e) {e.printStackTrace();}
-			}
+				try { sleep(200); } catch (InterruptedException e) {return;}
+			}	
 		}
 
 		private void moveGhost(Point point) {
