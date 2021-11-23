@@ -67,6 +67,7 @@ public class GameRoomView extends JFrame{
 	
 	private ImageIcon readyBtn_enable = new ImageIcon("res/buttons/readyBtn_enable.jpg");
 	private ImageIcon readyBtn_hover = new ImageIcon("res/buttons/readyBtn_hover.jpg");
+	private ImageIcon startBtn_enable = new ImageIcon("res/buttons/startBtn.jpg");
 	
 	// ∞‘¿” Ω√¿€ ¿Ã»ƒ
 	private MapPanel mapPanel;
@@ -108,17 +109,14 @@ public class GameRoomView extends JFrame{
 		roomTitle.setFont(new Font("∏º¿∫ ∞ÌµÒ", Font.BOLD, 15));
 		contentPane.add(roomTitle);
 		
-		exitBtn = new JButton(new ImageIcon("res/exit.png"));
+		exitBtn = new JButton(new ImageIcon("res/buttons/exit.png"));
 		exitBtn.setFocusPainted(false);
 		exitBtn.setBorderPainted(false);
 		exitBtn.setContentAreaFilled(false);
 		exitBtn.setBounds(760, 10, 115, 30);
 		contentPane.add(exitBtn);
 		
-		startBtn = new JButton("START");
-		startBtn.setOpaque(true);
-		startBtn.setBackground(readyDisable);
-		startBtn.setFont(new Font("∏º¿∫ ∞ÌµÒ", Font.BOLD + Font.ITALIC, 12));
+		startBtn = new JButton(startBtn_enable);
 		startBtn.setBounds(10, 45, 200, 30);
 		startBtn.setEnabled(false);
 		contentPane.add(startBtn);
@@ -229,14 +227,10 @@ public class GameRoomView extends JFrame{
 			if (!btnStatus.get(i).equals(READYON))
 				break;
 		}
-		if (i==btnStatus.size() && status.equals(READYON)) {
+		if (i==btnStatus.size() && status.equals(READYON))
 			startBtn.setEnabled(true);
-			startBtn.setBackground(new Color(240, 200, 200));
-		}
-		else {
+		else
 			startBtn.setEnabled(false);
-			startBtn.setBackground(readyDisable);
-		}
 			
 		contentPane.add(ready);
 		contentPane.add(readyId);
@@ -297,11 +291,10 @@ public class GameRoomView extends JFrame{
 		isStarted = true;
 		
 		for (int i = 0; i < readyBtn.size(); i++) {
+			contentPane.remove(readyName.get(i));
 			contentPane.remove(readyBtn.get(i));
 		}
 		startBtn.setEnabled(false);
-		startBtn.setBackground(readyDisable);
-		
 		contentPane.remove(exitBtn);
 		
 		System.out.println("CLIENT "+myName+" GAME STARTED");

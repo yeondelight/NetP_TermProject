@@ -82,8 +82,9 @@ public class WaitingView extends JFrame{
 	private HashMap<Integer, String> rooms;
 	private int roomNum = 0;
 	
+	private ImageIcon makeroomBtn = new ImageIcon("res/buttons/makeroomBtn.jpg");
+	private ImageIcon makeroomBtn_hover = new ImageIcon("res/buttons/makeroomBtn_hover.jpg");
 	private JButton makeRoom;
-	private String btnText = "<HTML><body><center>MAKE<br>NEW ROOM</center></body></HTML>";
 	
 	private ImageIcon img = new ImageIcon("res/howToPlay.jpg");
 	private JLabel imgLabel = new JLabel(img);
@@ -128,12 +129,11 @@ public class WaitingView extends JFrame{
 		makeDialog = new MakeRoomDialog(this, "Make New Room");
 				
 		// makeRoombtn ∫Ÿ¿Ã±‚
-		makeRoom = new JButton(btnText);
-		makeRoom.setOpaque(true);
-		makeRoom.setBackground(new Color(220, 250, 200));
+		makeRoom = new JButton(makeroomBtn);
 		makeRoom.setFont(new Font("Arial", Font.BOLD + Font.ITALIC, 15));
 		makeRoom.setLocation(705, 8);
 		makeRoom.setSize(new Dimension(170, 70));
+		makeRoom.setRolloverIcon(makeroomBtn_hover);
 		makeRoom.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				int key = makeDialog.getKey();
