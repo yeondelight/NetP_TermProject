@@ -82,8 +82,9 @@ public class WaitingView extends JFrame{
 	private HashMap<Integer, String> rooms;
 	private int roomNum = 0;
 	
+	private ImageIcon makeroomBtn = new ImageIcon("res/buttons/makeroomBtn.jpg");
+	private ImageIcon makeroomBtn_hover = new ImageIcon("res/buttons/makeroomBtn_hover.jpg");
 	private JButton makeRoom;
-	private String btnText = "<HTML><body><center>MAKE<br>NEW ROOM</center></body></HTML>";
 	
 	private ImageIcon img = new ImageIcon("res/howToPlay.jpg");
 	private JLabel imgLabel = new JLabel(img);
@@ -128,12 +129,11 @@ public class WaitingView extends JFrame{
 		makeDialog = new MakeRoomDialog(this, "Make New Room");
 				
 		// makeRoombtn 붙이기
-		makeRoom = new JButton(btnText);
-		makeRoom.setOpaque(true);
-		makeRoom.setBackground(new Color(220, 250, 200));
+		makeRoom = new JButton(makeroomBtn);
 		makeRoom.setFont(new Font("Arial", Font.BOLD + Font.ITALIC, 15));
 		makeRoom.setLocation(705, 8);
 		makeRoom.setSize(new Dimension(170, 70));
+		makeRoom.setRolloverIcon(makeroomBtn_hover);
 		makeRoom.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				int key = makeDialog.getKey();
@@ -405,14 +405,17 @@ public class WaitingView extends JFrame{
 		private final static String STARTED = "STARTED";
 		
 		// 누를 수 있는 버튼과 그렇지 않은 버튼 구분
-		private Color btnEnable = new Color(180, 210, 255);
-		private Color btnDisable = new Color(200, 200, 200);
+		private ImageIcon btnEnable = new ImageIcon("res/buttons/enterBtn.jpg");
+		private ImageIcon btnHover = new ImageIcon("res/buttons/enterBtn_hover.jpg");
+		
+		private Color disable = new Color(200, 200, 200);
 		
 		// 인원수를 표시하는 View는 Image로 처리
 		private ImageIcon pEnable0 = new ImageIcon("res/player/pEnable0.jpg");
 		private ImageIcon pEnable1 = new ImageIcon("res/player/pEnable1.jpg");
 		private ImageIcon pEnable2 = new ImageIcon("res/player/pEnable2.jpg");
 		private ImageIcon pEnable3 = new ImageIcon("res/player/pEnable3.jpg");
+		private ImageIcon pDisable1 = new ImageIcon("res/player/pDisable1.jpg");
 		private ImageIcon pDisable2 = new ImageIcon("res/player/pDisable2.jpg");
 		private ImageIcon pDisable3 = new ImageIcon("res/player/pDisable3.jpg");
 		private ImageIcon pDisable4 = new ImageIcon("res/player/pDisable4.jpg");
@@ -483,11 +486,13 @@ public class WaitingView extends JFrame{
 				}
 				
 				if(!status.equals(AVAIL)) {
-					roomView.name.setForeground(btnDisable);
-					roomView.enter.setBackground(btnDisable);
+					roomView.name.setForeground(disable);
 					roomView.enter.setEnabled(false);
 					
 					switch(pNum) {
+					case 1:
+						roomView.pNum.setIcon(pDisable1);
+						break;
 					case 2:
 						roomView.pNum.setIcon(pDisable2);
 						break;
@@ -536,7 +541,7 @@ public class WaitingView extends JFrame{
 			private int key;
 			private JLabel name = new JLabel();
 			private JLabel pNum = new JLabel();
-			private JButton enter = new JButton(" ENTER ");
+			private JButton enter = new JButton(btnEnable);
 
 			public RoomView(int key, String roomName) {
 				this.key = key;
@@ -548,11 +553,10 @@ public class WaitingView extends JFrame{
 
 				pNum.setPreferredSize(new Dimension(80, 50));
 				
-				enter.setOpaque(true);
-				enter.setBackground(btnEnable);
 				enter.setPreferredSize(new Dimension(100, 50));
 				enter.setFont(new Font("Arial", Font.BOLD + Font.ITALIC, 15));
 				enter.addActionListener(new EnterActionListener(key));
+				enter.setRolloverIcon(btnHover);
 			} // End of RoomView()
 		} // End of class RoomView
 		
