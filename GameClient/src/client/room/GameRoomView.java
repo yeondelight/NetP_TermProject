@@ -54,14 +54,19 @@ public class GameRoomView extends JFrame{
 	
 	private Vector<String> userList = new Vector<String>();
 	private Vector<String> btnStatus = new Vector<String>();
+	private Vector<JLabel> readyName = new Vector<JLabel>();
 	private Vector<JButton> readyBtn = new Vector<JButton>();
 	
 	private boolean isPressed = false;
 	private boolean isStarted = false;
 	
-	private Color btnEnable = new Color(180, 210, 255);
-	private Color btnDisable = new Color(200, 200, 200);
+	private Color readyEnableOn = new Color(255, 197, 195);
+	private Color readyEnableOff = new Color(212, 237, 236);
+	private Color readyDisable = new Color(200, 200, 200);
 	private Color defaultColor = new Color(238, 238, 238);
+	
+	private ImageIcon readyBtn_enable = new ImageIcon("res/buttons/readyBtn_enable.jpg");
+	private ImageIcon readyBtn_hover = new ImageIcon("res/buttons/readyBtn_hover.jpg");
 	
 	// 게임 시작 이후
 	private MapPanel mapPanel;
@@ -99,7 +104,7 @@ public class GameRoomView extends JFrame{
 		roomTitle = new JLabel(" [#" + room.getKey() + "] "+room.getName());
 		roomTitle.setOpaque(true);
 		roomTitle.setBounds(10, 10, 200, 25);
-		roomTitle.setBackground(btnDisable);
+		roomTitle.setBackground(readyDisable);
 		roomTitle.setFont(new Font("맑은 고딕", Font.BOLD, 15));
 		contentPane.add(roomTitle);
 		
@@ -112,7 +117,7 @@ public class GameRoomView extends JFrame{
 		
 		startBtn = new JButton("START");
 		startBtn.setOpaque(true);
-		startBtn.setBackground(btnDisable);
+		startBtn.setBackground(readyDisable);
 		startBtn.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 12));
 		startBtn.setBounds(10, 45, 200, 30);
 		startBtn.setEnabled(false);
@@ -135,24 +140,29 @@ public class GameRoomView extends JFrame{
 
 		btnSend = new JButton("SEND");
 		btnSend.setOpaque(true);
-		btnSend.setBackground(btnEnable);
+		btnSend.setBackground(readyEnableOff);
 		btnSend.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 12));
 		btnSend.setBounds(140, 420, 70, 30);
 		contentPane.add(btnSend);
 		
-		// ReadyBtn 설정
+		// ReadyName, ReadyBtn 설정
 		userList = room.getUserList();
 		for (int i = 0; i < userList.size(); i++) {
 			String userName = userList.get(i).toString();
-			JButton ready = new JButton(userName);
-			ready.setOpaque(true);
-			ready.setBackground(btnDisable);
-			ready.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 20));
-			ready.setBounds(220 + 165*i, 50, 160, 400);
+			JLabel readyId = new JLabel(userName);
+			readyId.setOpaque(true);
+			readyId.setBounds(220 + 165*i, 50, 160, 40);
+			readyId.setHorizontalAlignment(JLabel.CENTER);
+			readyId.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 20));
+			JButton ready = new JButton(readyBtn_enable);
+			ready.setHorizontalAlignment(JButton.CENTER);
+			ready.setBounds(220 + 165*i, 100, 160, 350);
 			if(!userName.equals(myName))
 				ready.setEnabled(false);
 			ready.addActionListener(new ReadyActionListener(room.getKey()));
+			contentPane.add(readyId);
 			contentPane.add(ready);
+			readyName.add(readyId);
 			readyBtn.add(ready);
 		}
 		
@@ -176,8 +186,10 @@ public class GameRoomView extends JFrame{
 	// Server로부터 Room의 변경사항을 받은 경우, revalidate(), repaint()로 업데이트
 	public void clear() {
 		for (int i = 0; i < readyBtn.size(); i++) {
+			contentPane.remove(readyName.get(i));
 			contentPane.remove(readyBtn.get(i));
 		}
+		readyName.clear();
 		readyBtn.clear();
 		userList.clear();
 		btnStatus.clear();
@@ -187,15 +199,25 @@ public class GameRoomView extends JFrame{
 	
 	// 새로운 User 추가
 	public void addUser(String name, String status) {
+		JLabel readyId = new JLabel(name);
 		JButton ready = new JButton(name);
-		ready.setOpaque(true);
-		if(status.equals(READYON))
-			ready.setBackground(btnEnable);
-		else
-			ready.setBackground(btnDisable);
-		ready.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 20));
-		ready.setBounds(220 + 165*readyBtn.size(), 50, 160, 400);
 		
+		readyId.setOpaque(true);
+		readyId.setHorizontalAlignment(JLabel.CENTER);
+		readyId.setBounds(220 + 165*readyName.size(), 50, 160, 40);
+		readyId.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 20));
+		
+		if(status.equals(READYON)) {
+			ready.setIcon(readyBtn_hover);
+			readyId.setBackground(readyEnableOn);
+		}
+		else {
+			ready.setIcon(readyBtn_enable);
+			readyId.setBackground(readyEnableOff);
+		}
+		ready.setHorizontalAlignment(JButton.CENTER);
+		ready.setBounds(220 + 165*readyBtn.size(), 100, 160, 350);
+
 		if(!name.equals(myName))
 			ready.setEnabled(false);
 		else
@@ -213,12 +235,15 @@ public class GameRoomView extends JFrame{
 		}
 		else {
 			startBtn.setEnabled(false);
-			startBtn.setBackground(btnDisable);
+			startBtn.setBackground(readyDisable);
 		}
 			
 		contentPane.add(ready);
+		contentPane.add(readyId);
+		
 		userList.add(name);
 		readyBtn.add(ready);
+		readyName.add(readyId);
 		btnStatus.add(status);
 		
 		contentPane.repaint();
@@ -275,7 +300,7 @@ public class GameRoomView extends JFrame{
 			contentPane.remove(readyBtn.get(i));
 		}
 		startBtn.setEnabled(false);
-		startBtn.setBackground(btnDisable);
+		startBtn.setBackground(readyDisable);
 		
 		contentPane.remove(exitBtn);
 		
@@ -283,7 +308,7 @@ public class GameRoomView extends JFrame{
 		
 		// 채팅창 비활성화
 		btnSend.setEnabled(false);
-		btnSend.setBackground(btnDisable);
+		btnSend.setBackground(readyDisable);
 		
 		// Map 그리기
 		mapPanel = new MapPanel(parent, gameMap, room.getKey(), myName);
@@ -439,7 +464,7 @@ public class GameRoomView extends JFrame{
 		
 		// 채팅창 활성화
 		btnSend.setEnabled(true);
-		btnSend.setBackground(btnEnable);
+		btnSend.setBackground(readyEnableOff);
 		
 		// 다 지우고
 		contentPane.remove(mapPanel);

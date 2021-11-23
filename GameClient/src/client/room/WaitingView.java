@@ -415,6 +415,7 @@ public class WaitingView extends JFrame{
 		private ImageIcon pEnable1 = new ImageIcon("res/player/pEnable1.jpg");
 		private ImageIcon pEnable2 = new ImageIcon("res/player/pEnable2.jpg");
 		private ImageIcon pEnable3 = new ImageIcon("res/player/pEnable3.jpg");
+		private ImageIcon pDisable1 = new ImageIcon("res/player/pDisable1.jpg");
 		private ImageIcon pDisable2 = new ImageIcon("res/player/pDisable2.jpg");
 		private ImageIcon pDisable3 = new ImageIcon("res/player/pDisable3.jpg");
 		private ImageIcon pDisable4 = new ImageIcon("res/player/pDisable4.jpg");
@@ -489,6 +490,9 @@ public class WaitingView extends JFrame{
 					roomView.enter.setEnabled(false);
 					
 					switch(pNum) {
+					case 1:
+						roomView.pNum.setIcon(pDisable1);
+						break;
 					case 2:
 						roomView.pNum.setIcon(pDisable2);
 						break;
