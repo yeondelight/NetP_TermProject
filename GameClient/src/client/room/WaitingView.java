@@ -405,8 +405,10 @@ public class WaitingView extends JFrame{
 		private final static String STARTED = "STARTED";
 		
 		// 누를 수 있는 버튼과 그렇지 않은 버튼 구분
-		private Color btnEnable = new Color(180, 210, 255);
-		private Color btnDisable = new Color(200, 200, 200);
+		private ImageIcon btnEnable = new ImageIcon("res/buttons/enterBtn.jpg");
+		private ImageIcon btnHover = new ImageIcon("res/buttons/enterBtn_hover.jpg");
+		
+		private Color disable = new Color(200, 200, 200);
 		
 		// 인원수를 표시하는 View는 Image로 처리
 		private ImageIcon pEnable0 = new ImageIcon("res/player/pEnable0.jpg");
@@ -483,8 +485,7 @@ public class WaitingView extends JFrame{
 				}
 				
 				if(!status.equals(AVAIL)) {
-					roomView.name.setForeground(btnDisable);
-					roomView.enter.setBackground(btnDisable);
+					roomView.name.setForeground(disable);
 					roomView.enter.setEnabled(false);
 					
 					switch(pNum) {
@@ -536,7 +537,7 @@ public class WaitingView extends JFrame{
 			private int key;
 			private JLabel name = new JLabel();
 			private JLabel pNum = new JLabel();
-			private JButton enter = new JButton(" ENTER ");
+			private JButton enter = new JButton(btnEnable);
 
 			public RoomView(int key, String roomName) {
 				this.key = key;
@@ -548,11 +549,10 @@ public class WaitingView extends JFrame{
 
 				pNum.setPreferredSize(new Dimension(80, 50));
 				
-				enter.setOpaque(true);
-				enter.setBackground(btnEnable);
 				enter.setPreferredSize(new Dimension(100, 50));
 				enter.setFont(new Font("Arial", Font.BOLD + Font.ITALIC, 15));
 				enter.addActionListener(new EnterActionListener(key));
+				enter.setRolloverIcon(btnHover);
 			} // End of RoomView()
 		} // End of class RoomView
 		
