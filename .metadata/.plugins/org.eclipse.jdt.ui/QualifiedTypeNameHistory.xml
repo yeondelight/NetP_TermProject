@@ -33,7 +33,8 @@
     <fullyQualifiedTypeName name="java.util.Comparator"/>
     <fullyQualifiedTypeName name="java.util.Collections"/>
     <fullyQualifiedTypeName name="client.room.MapPanel.PlayerKeyboardListener.BulletThread"/>
+    <fullyQualifiedTypeName name="javax.swing.JTextPane"/>
     <fullyQualifiedTypeName name="javax.swing.ImageIcon"/>
     <fullyQualifiedTypeName name="java.awt.Image"/>
-    <fullyQualifiedTypeName name="javax.swing.JTextPane"/>
+    <fullyQualifiedTypeName name="client.main.GameClient"/>
 </qualifiedTypeNameHistroy>
