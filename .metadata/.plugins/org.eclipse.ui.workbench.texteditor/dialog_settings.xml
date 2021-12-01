@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
-		<item key="selection" value="WriteOneObject"/>
+		<item key="selection" value="spectbtnEnable"/>
 		<item key="wrap" value="true"/>
 		<item key="casesensitive" value="false"/>
 		<item key="wholeword" value="false"/>
 		<item key="incremental" value="false"/>
 		<item key="isRegEx" value="false"/>
 		<list key="findhistory">
+			<item value="spectbtnEnable"/>
+			<item value="exit.png"/>
+			<item value="readyEnableOn"/>
+			<item value="btnEnable"/>
 			<item value="WriteOneObject"/>
 			<item value="WriteOneObejct"/>
 			<item value="oos.writeObject(ob) error"/>
@@ -19,17 +23,13 @@
 			<item value="sendobject"/>
 			<item value="start"/>
 			<item value="enterRoom"/>
-			<item value="Login"/>
-			<item value="login()"/>
-			<item value="Login()"/>
-			<item value="Action"/>
 		</list>
 		<list key="replacehistory">
 			<item value="num"/>
 		</list>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
-		<item key="DIALOG_X_ORIGIN" value="1515"/>
+		<item key="DIALOG_X_ORIGIN" value="1513"/>
 		<item key="DIALOG_Y_ORIGIN" value="498"/>
 		<item key="DIALOG_WIDTH" value="250"/>
 		<item key="DIALOG_HEIGHT" value="403"/>

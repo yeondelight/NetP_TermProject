@@ -586,18 +586,16 @@ public class WaitingView extends JFrame {
 				name.setText(" [" + key + "] " + roomName);
 				name.setOpaque(true);
 				name.setBackground(Color.WHITE);
-				name.setPreferredSize(new Dimension(380, 50));
+				name.setPreferredSize(new Dimension(430, 50));
 				name.setFont(new Font("¸¼Àº °íµñ", Font.BOLD, 20));
 
 				pNum.setPreferredSize(new Dimension(80, 50));
 
 				enter.setPreferredSize(new Dimension(100, 50));
-				enter.setFont(new Font("Arial", Font.BOLD + Font.ITALIC, 15));
 				enter.addActionListener(new EnterActionListener(key));
 				enter.setRolloverIcon(btnHover);
 
-				spectator.setPreferredSize(new Dimension(100, 50));
-				spectator.setFont(new Font("Arial", Font.BOLD + Font.ITALIC, 15));
+				spectator.setPreferredSize(new Dimension(50, 50));
 				spectator.addActionListener(new SpectatorActionListener(key));
 				spectator.setRolloverIcon(spectbtnHover);
 				
