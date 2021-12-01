@@ -30,8 +30,10 @@ public class GameRoomView extends JFrame{
 	private static final String SLEEP = "SLEEP";
 	private static final String READYON = "READYON";
 	private static final String READYOFF = "READYOFF";
+	private static final String SPECTATOR = "SPECTATOR";
 	
 	private static final String C_ENTROOM = "201";		// 해당 방에 입장 
+	private static final String C_SPECTENTROOM = "203";	// 해당 방에 입장
 	private static final String C_UPDROOM = "302";
 	private static final String C_STRGAME = "304";
 	private static final String C_EXITROOM = "308";
@@ -53,6 +55,7 @@ public class GameRoomView extends JFrame{
 	private String myName;
 	
 	private Vector<String> userList = new Vector<String>();
+	private Vector<String> spectatorList = new Vector<String>();
 	private Vector<String> btnStatus = new Vector<String>();
 	private Vector<JLabel> readyName = new Vector<JLabel>();
 	private Vector<JButton> readyBtn = new Vector<JButton>();
@@ -190,6 +193,7 @@ public class GameRoomView extends JFrame{
 		readyName.clear();
 		readyBtn.clear();
 		userList.clear();
+		spectatorList.clear();
 		btnStatus.clear();
 		contentPane.revalidate();
 		contentPane.repaint();
@@ -242,6 +246,26 @@ public class GameRoomView extends JFrame{
 		
 		contentPane.repaint();
 		contentPane.revalidate();
+	}
+	
+	// 새로운 관전자 User 추가
+	public void addSpectatorUser(String name, String status) {
+		spectatorList.add(name);
+		// ReadyBtn 설정
+//		userList = room.getUserList();
+//		for (int i = 0; i < userList.size(); i++) {
+//			String userName = userList.get(i).toString();
+//			JButton ready = new JButton(userName);
+//			ready.setOpaque(true);
+//			ready.setBackground(btnDisable);
+//			ready.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 20));
+//			ready.setBounds(220 + 165 * i, 50, 160, 400);
+//
+//			contentPane.add(ready);
+//			readyBtn.add(ready);
+//		}
+		//contentPane.repaint();
+		//contentPane.revalidate();
 	}
 	
 	// 화면에 출력 - Chatting
@@ -632,7 +656,13 @@ public class GameRoomView extends JFrame{
 		public void actionPerformed(ActionEvent e) {
 			gameRoomView.setVisible(false);
 			parent.SendObject(new ChatMsg(myName, C_EXITROOM, key+" "+false));
-			parent.SendObject(new ChatMsg(myName, C_ENTROOM, key+""));		// 재입장
+			//parent.SendObject(new ChatMsg(myName, C_ENTROOM, key+""));		// 재입장
+			if(userList.contains(myName))
+				parent.SendObject(new ChatMsg(myName, C_ENTROOM, key + "")); // 재입장
+			else if(spectatorList.contains(myName)) {
+				System.out.println("YES~~~~~~~~~~~~~~~~~~~~~~~~!!!!!!!!!!!");
+				parent.SendObject(new ChatMsg(myName, C_SPECTENTROOM, key + ""));
+			}
 		}
 	} // End of class ReplayActionListener
 }

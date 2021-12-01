@@ -161,6 +161,7 @@ public class GameServer extends JFrame{
 		private static final String SLEEP = "SLEEP";
 		private static final String READYON = "READYON";
 		private static final String READYOFF = "READYOFF";
+		private static final String SPECTATOR = "SPECTATOR";
 		
 		// 이하 GameRoom 처리를 위한 변수
 		private GameRoom gameRoom = null;			// 초기에는 게임방에 입장하지 않았으므로
@@ -169,30 +170,36 @@ public class GameServer extends JFrame{
 		private final static String STARTED = "STARTED";
 		
 		// 이하 Protocol msg
-		private static final String C_LOGIN = "100";		// 새로운 client 접속
-		private static final String C_ACKLIST = "101";		// C->S 101을 정상적으로 수신
-		private static final String C_MAKEROOM = "200";		// 새로운 방 생성
-		private static final String C_ENTROOM = "201";		// 해당 방에 입장 
-		private static final String C_CHATMSG = "301";		// C->S GameRoom 내 일반 채팅 메세지
-		private static final String C_UPDROOM = "302";		// C->S GameRoom 업데이트좀
-		private static final String C_ACKROOM = "303";		// C->S 320 ACK
-		private static final String C_STRGAME = "304";		// C->S 게임 시작할래
-		private static final String C_UPDGAME = "305";		// Client -> Server 움직임 알림
-		private static final String C_UPDSCORE = "307";		// Client -> Server 점수 변경 알림
-		private static final String C_EXITROOM = "308";		// Client -> Server 나 나갈래
-		private static final String C_ENDGAME = "309";		// Client -> Server 게임 끝났어
-		
-		private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
-		private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
-		private static final String S_UPDLIST = "210";		// room 목록 update
-		private static final String S_ENTROOM = "220";		// S->C room 입장 허가
-		private static final String S_CHATMSG = "310";		// S->C GameRoom 내 방송
-		private static final String S_UPDROOM = "320";		// GameRoom 정보 update : user 수 반환
-		private static final String S_USRLIST = "330";		// userList update
-		private static final String S_STRGAME = "340";		// S->C 그래 시작해
-		private static final String S_UPDGAME = "350";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Event)
-		private static final String S_UPDTIME = "360";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Timer)
-		private static final String S_UPDSCORE = "370";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Score)
+				private static final String C_LOGIN = "100";		// 새로운 client 접속
+				private static final String C_ACKLIST = "101";		// C->S 101을 정상적으로 수신
+				private static final String C_MAKEROOM = "200";		// 새로운 방 생성
+				private static final String C_ENTROOM = "201";		// 해당 방에 입장 
+				private static final String C_SPECTENTROOM = "203";	// 해당 방에 입장 
+				private static final String C_CHATMSG = "301";		// C->S GameRoom 내 일반 채팅 메세지
+				private static final String C_UPDROOM = "302";		// C->S GameRoom 업데이트좀
+				private static final String C_SPECTUPDROOM = "312";	// C->S GameRoom 업데이트좀 (관전자)
+				private static final String C_ACKROOM = "303";		// C->S 320 ACK
+				private static final String C_SPECTACKROOM = "313";		// C->S 320 ACK
+				private static final String C_STRGAME = "304";		// C->S 게임 시작할래
+				private static final String C_UPDGAME = "305";		// Client -> Server 움직임 알림
+				private static final String C_UPDSCORE = "307";		// Client -> Server 점수 변경 알림
+				private static final String C_EXITROOM = "308";		// Client -> Server 나 나갈래
+				private static final String C_ENDGAME = "309";		// Client -> Server 게임 끝났어
+				
+				private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
+				private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
+				private static final String S_UPDLIST = "210";		// room 목록 update
+				private static final String S_ENTROOM = "220";		// S->C room 입장 허가
+				private static final String S_SPECTENTROOM = "230";	// S->C room 입장 허가
+				private static final String S_CHATMSG = "310";		// S->C GameRoom 내 방송
+				private static final String S_UPDROOM = "320";		// GameRoom 정보 update : user 수 반환
+				private static final String S_SPECTUPDROOM = "321";	// GameRoom 정보 update : spectator 수 반환
+				private static final String S_USRLIST = "330";		// userList update
+				private static final String S_SPECTUSRLIST = "331";		// spectatorList update
+				private static final String S_STRGAME = "340";		// S->C 그래 시작해
+				private static final String S_UPDGAME = "350";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Event)
+				private static final String S_UPDTIME = "360";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Timer)
+				private static final String S_UPDSCORE = "370";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Score)
 		
 		public String getUserName() {
 			return UserName;
@@ -237,7 +244,7 @@ public class GameServer extends JFrame{
 		}
 		
 		// UserService Thread가 담당하는 Client 에게 1:1 전송
-		public void WriteOne(String msg) {
+		public synchronized void WriteOne(String msg) {
 			try {
 				ChatMsg obcm = new ChatMsg("SERVER", "310", msg);
 				oos.writeObject(obcm);
@@ -258,7 +265,7 @@ public class GameServer extends JFrame{
 			}
 		}
 				
-		public void WriteOneObject(Object ob) {
+		public synchronized void WriteOneObject(Object ob) {
 			try {
 			    oos.writeObject(ob);
 			} 
@@ -280,7 +287,7 @@ public class GameServer extends JFrame{
 		}
 
 		// 모든 User들에게 방송. 각각의 UserService Thread의 WriteOne() 을 호출한다.
-		public void WriteAll(String str) {
+		public synchronized void WriteAll(String str) {
 			for (int i = 0; i < user_vc.size(); i++) {
 				UserService user = (UserService) user_vc.elementAt(i);
 				// online 상태인 User에게만 보낸다. (WaitingRoom만 보내게 됨)
@@ -290,7 +297,7 @@ public class GameServer extends JFrame{
 		}
 		
 		// 모든 User들에게 Object를 방송. 채팅 message와 image object를 보낼 수 있다
-		public void WriteAllObject(Object ob) {
+		public synchronized void WriteAllObject(Object ob) {
 			for (int i = 0; i < user_vc.size(); i++) {
 				UserService user = (UserService) user_vc.elementAt(i);
 				if (user.getUserStatus().equals(ONLINE))
@@ -299,7 +306,7 @@ public class GameServer extends JFrame{
 		}
 		
 		// 나를 제외한 User들에게 방송. 각각의 UserService Thread의 WriteOne() 을 호출한다.
-		public void WriteOthers(String str) {
+		public synchronized void WriteOthers(String str) {
 			for (int i = 0; i < user_vc.size(); i++) {
 				UserService user = (UserService) user_vc.elementAt(i);
 				if (user != this && user.getUserStatus().equals(ONLINE))
@@ -308,7 +315,7 @@ public class GameServer extends JFrame{
 		}
 
 		// 내가 속한 GameRoom의 다른 User들에게 전송. 각 GameRoom Thread의 WriteOne()을 호출한다.
-		public void WriteRoomObject(int key, Object ob) {
+		public synchronized void WriteRoomObject(int key, Object ob) {
 			GameRoom room = roomManager.getRoom(key);
 			Vector userList = room.getUserList();
 			for(int i = 0; i < user_vc.size(); i++) {
@@ -316,6 +323,17 @@ public class GameServer extends JFrame{
 				for (int j = 0; j < userList.size(); j++) {
 					if(user.UserName.equals(userList.get(j))) {
 						user.WriteOneObject(ob);
+					}
+				}
+			}
+			if(room.getSpectatorList()!=null) {
+				Vector spectatorList = room.getSpectatorList();
+				for(int i = 0; i < user_vc.size(); i++) {
+					UserService user = (UserService) user_vc.elementAt(i);
+					for (int j = 0; j < spectatorList.size(); j++) {
+						if(user.UserName.equals(spectatorList.get(j))) {
+							user.WriteOneObject(ob);
+						}
 					}
 				}
 			}
@@ -446,6 +464,20 @@ public class GameServer extends JFrame{
 						WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));		// 입장 후 방의 상태가 변경될 수 있으므로
 					}
 					
+					// C_ENTROOM(203)
+					// client -> Server 이 방에 관전자로 들어갈래
+					// key에 해당하는 방 객체를 불러와 Client에게 전송 (C_SPECTENTROOM)
+					else if (cm.getCode().matches(C_SPECTENTROOM)) {
+						int key = Integer.parseInt(cm.getData());
+						GameRoom room = roomManager.getRoom(key);
+						this.enterRoom(room);
+						this.setUserStatus(SPECTATOR);
+						room.enterSpectatorUser(UserName);
+						RoomMsg enter = new RoomMsg(UserName, S_SPECTENTROOM, room);
+						WriteOneObject(enter);
+						WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));		// 입장 후 방의 상태가 변경될 수 있으므로
+					}
+					
 					// C_CHATMSG(301)
 					// Client -> Server 방 내에서의 일반 채팅
 					// new ChatMsg(USERNAME, 301, key msg) 형태
@@ -476,6 +508,23 @@ public class GameServer extends JFrame{
 						}
 						GameRoom room = roomManager.getRoom(key);
 						WriteRoomObject(key, new ChatMsg(UserName, S_UPDROOM, room.getUserList().size()+""));
+						WriteRoomObject(key, new ChatMsg(UserName, S_SPECTUPDROOM, room.getSpectatorList().size()+""));
+					}
+					
+					// C_SPECTUPDROOM(312)
+					// Client -> Server 나 방 상태 바꿨으니까 업데이트좀
+					// new ChatMsg(USERNAME, 321, roomKey myStatus) 형태
+					// 같은 게임방 내 User들에게 전송
+					else if (cm.getCode().matches(C_SPECTUPDROOM)) {
+						String val[] = cm.getData().split(" ");
+						int key = Integer.parseInt(val[0]);
+						if(val.length > 1) {
+							String status = val[1];
+							this.setUserStatus(SPECTATOR);
+						}
+						GameRoom room = roomManager.getRoom(key);
+						WriteRoomObject(key, new ChatMsg(UserName, S_SPECTUPDROOM, room.getSpectatorList().size()+""));
+						WriteRoomObject(key, new ChatMsg(UserName, S_UPDROOM, room.getUserList().size()+""));
 					}
 					
 					// C_ACKROOM(303)
@@ -492,6 +541,23 @@ public class GameServer extends JFrame{
 							String contents = name + " " + status;
 							System.out.println("ROOMOBJ 전송 : "+contents);
 							WriteOneObject(new ChatMsg(UserName, S_USRLIST, contents));
+						}
+					}
+					
+					// C_SPECTACKROOM(313)
+					// Client -> Server User 받을 준비 완
+					// new ChatMsg(USERNAME, 303, roomKey) 형태
+					// 같은 게임방 내 User들에게 전송
+					else if (cm.getCode().matches(C_SPECTACKROOM)) {
+						int key = Integer.parseInt(cm.getData());
+						GameRoom room = roomManager.getRoom(key);
+						Vector spectatorList = room.getSpectatorList();
+						for (int i = 0; i < spectatorList.size(); i++) {
+							String name = (String) spectatorList.get(i);
+							String status = getStatusWithName(name);
+							String contents = name + " " + status;
+							System.out.println("ROOMOBJ 전송 : "+contents);
+							WriteOneObject(new ChatMsg(UserName, S_SPECTUSRLIST, contents));
 						}
 					}
 					
@@ -566,11 +632,27 @@ public class GameServer extends JFrame{
 						boolean refresh = Boolean.parseBoolean(val[1]);
 						GameRoom room = roomManager.getRoom(key);
 						this.exitRoom();
-						this.setUserStatus(ONLINE);
-						room.exitUser(UserName);
+						if(!this.getUserStatus().equals(SPECTATOR))				// 관전자의 status는 그대로 SPECTATOR
+							this.setUserStatus(ONLINE);
+						//room.exitUser(UserName);
+						AppendText("@@@ ");
+						for (int i = 0; i < user_vc.size(); i++) {
+							UserService user = (UserService) user_vc.elementAt(i);
+							// player인 경우 exitUser, spectator인 경우 exitSpectator
+							if(user.getUserStatus().equals(SPECTATOR)) {
+								AppendText("Inside of Spectator: "+user.getUserStatus());
+								room.exitSpectator(UserName);
+							}
+							else {
+								AppendText("!!!!!!!!!!!!!"+user.getUserStatus());
+								room.exitUser(UserName);
+							}
+						}
 						WriteRoomObject(key, new ChatMsg(UserName, S_UPDROOM, room.getUserList().size()+""));	// user가 나갔으므로
-						if (refresh)					// 퇴장 후 방의 상태가 변경될 수 있으므로. 그러나 바로 재입장하는 경우를 고려해 true일때만 변경한다.
+						WriteRoomObject(key, new ChatMsg(UserName, S_SPECTUPDROOM, room.getSpectatorList().size()+""));
+						if (refresh)				// 퇴장 후 방의 상태가 변경될 수 있으므로. 그러나 바로 재입장하는 경우를 고려해 true일때만 변경한다.
 							WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));
+						
 					}
 					
 					// C_ENDGAME(309)
@@ -585,7 +667,8 @@ public class GameServer extends JFrame{
 						WriteOneObject(serverMsg);
 						
 						this.exitRoom();
-						this.setUserStatus(ONLINE);
+						if(!this.getUserStatus().equals(SPECTATOR))			// 관전자는 status가 그대로 SPECTATOR이도록
+							this.setUserStatus(ONLINE);
 						room.exitUser(UserName);
 						
 						if(room.getUserList().size() < room.MAXPLAYER)
@@ -610,7 +693,7 @@ public class GameServer extends JFrame{
 						WriteAllObject(cm);
 					}
 					
-				} catch (IOException e) {
+				} catch (IOException e) {									// 여기 아직 spectator exit안함.
 					AppendText("dis.read() error");
 					try {
 						ois.close();
