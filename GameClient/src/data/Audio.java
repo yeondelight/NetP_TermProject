@@ -8,6 +8,7 @@ import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+// Audio
 public class Audio {
 	private Clip clip;
 	//private boolean isloop;
