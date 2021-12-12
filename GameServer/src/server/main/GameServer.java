@@ -291,7 +291,7 @@ public class GameServer extends JFrame{
 			for (int i = 0; i < user_vc.size(); i++) {
 				UserService user = (UserService) user_vc.elementAt(i);
 				// online 상태인 User에게만 보낸다. (WaitingRoom만 보내게 됨)
-				if(user.getUserStatus().equals(ONLINE))
+				if(user.getUserStatus().equals(ONLINE) || user.getUserStatus().equals(SPECTATOR))
 					user.WriteOne(str);
 			}
 		}
@@ -300,7 +300,7 @@ public class GameServer extends JFrame{
 		public synchronized void WriteAllObject(Object ob) {
 			for (int i = 0; i < user_vc.size(); i++) {
 				UserService user = (UserService) user_vc.elementAt(i);
-				if (user.getUserStatus().equals(ONLINE))
+				if (user.getUserStatus().equals(ONLINE) || user.getUserStatus().equals(SPECTATOR))
 					user.WriteOneObject(ob);
 			}
 		}
@@ -310,6 +310,8 @@ public class GameServer extends JFrame{
 			for (int i = 0; i < user_vc.size(); i++) {
 				UserService user = (UserService) user_vc.elementAt(i);
 				if (user != this && user.getUserStatus().equals(ONLINE))
+					user.WriteOne(str);
+				else if(user != this && user.getUserStatus().equals(SPECTATOR))
 					user.WriteOne(str);
 			}
 		}
@@ -634,8 +636,6 @@ public class GameServer extends JFrame{
 						this.exitRoom();
 						if(!this.getUserStatus().equals(SPECTATOR))				// 관전자의 status는 그대로 SPECTATOR
 							this.setUserStatus(ONLINE);
-						//room.exitUser(UserName);
-						AppendText("@@@ ");
 						for (int i = 0; i < user_vc.size(); i++) {
 							UserService user = (UserService) user_vc.elementAt(i);
 							// player인 경우 exitUser, spectator인 경우 exitSpectator
@@ -643,16 +643,13 @@ public class GameServer extends JFrame{
 								AppendText("Inside of Spectator: "+user.getUserStatus());
 								room.exitSpectator(UserName);
 							}
-							else {
-								AppendText("!!!!!!!!!!!!!"+user.getUserStatus());
+							else
 								room.exitUser(UserName);
-							}
 						}
 						WriteRoomObject(key, new ChatMsg(UserName, S_UPDROOM, room.getUserList().size()+""));	// user가 나갔으므로
 						WriteRoomObject(key, new ChatMsg(UserName, S_SPECTUPDROOM, room.getSpectatorList().size()+""));
-						if (refresh)				// 퇴장 후 방의 상태가 변경될 수 있으므로. 그러나 바로 재입장하는 경우를 고려해 true일때만 변경한다.
+						if (refresh) 				// 퇴장 후 방의 상태가 변경될 수 있으므로. 그러나 바로 재입장하는 경우를 고려해 true일때만 변경한다.
 							WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));
-						
 					}
 					
 					// C_ENDGAME(309)

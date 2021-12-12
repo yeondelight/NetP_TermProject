@@ -19,6 +19,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 
+import data.Audio;
 import data.ChatMsg;
 import data.GameMap;
 import data.GameRoom;
@@ -51,6 +52,8 @@ public class GameRoomView extends JFrame{
 	private JButton btnSend;
 	private JButton startBtn;
 	private JButton exitBtn;
+
+	private Audio bgm = new Audio("res/music/bgm.wav",true);
 	
 	private String myName;
 	
@@ -251,21 +254,6 @@ public class GameRoomView extends JFrame{
 	// 새로운 관전자 User 추가
 	public void addSpectatorUser(String name, String status) {
 		spectatorList.add(name);
-		// ReadyBtn 설정
-//		userList = room.getUserList();
-//		for (int i = 0; i < userList.size(); i++) {
-//			String userName = userList.get(i).toString();
-//			JButton ready = new JButton(userName);
-//			ready.setOpaque(true);
-//			ready.setBackground(btnDisable);
-//			ready.setFont(new Font("맑은 고딕", Font.BOLD + Font.ITALIC, 20));
-//			ready.setBounds(220 + 165 * i, 50, 160, 400);
-//
-//			contentPane.add(ready);
-//			readyBtn.add(ready);
-//		}
-		//contentPane.repaint();
-		//contentPane.revalidate();
 	}
 	
 	// 화면에 출력 - Chatting
@@ -312,6 +300,8 @@ public class GameRoomView extends JFrame{
 	// 게임 시작
 	// GameView를 새롭게 그리고 update요청
 	public void startGame(GameMap gameMap) {
+		bgm.start(true);
+		
 		isStarted = true;
 		
 		for (int i = 0; i < readyBtn.size(); i++) {
@@ -478,6 +468,9 @@ public class GameRoomView extends JFrame{
 	
 	// 게임 종료
 	public void endGame() {
+		bgm.stop();
+		bgm=new Audio("res/music/winning.wav",false);
+		bgm.start(false);
 		
 		// 채팅창 활성화
 		btnSend.setEnabled(true);

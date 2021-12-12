@@ -17,6 +17,7 @@ import java.util.Vector;
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 
+import data.Audio;
 import data.ChatMsg;
 import data.GameMap;
 
@@ -91,7 +92,9 @@ public class MapPanel extends JPanel implements Serializable{
 		item = gameMap.getItem();
 		ghost = gameMap.getGhost();
 		playerXY = gameMap.getPlayerXY();
-
+		System.out.println("RESULT OF GHOST:");
+		System.out.println(ghost);
+		
 		setLayout(null);
 		setPreferredSize(new Dimension(460, 460));
 		
@@ -288,18 +291,17 @@ public class MapPanel extends JPanel implements Serializable{
 		}
 		
 		// ghost를 맞추면 없앰
-		int gcnt=1;
+		int gcnt=0;
 		for(Point ghost_p : ghost) {
 			if(bullet.x == ghost_p.x*UNIT && bullet.y == ghost_p.y*UNIT) {
-				for(GhostThread g : vectorGhost) {
-					String threadName = "Thread-"+String.valueOf(gcnt);
-					if(g.getName().equals(threadName)) {
-						g.interrupt();
-						vectorGhost.remove(g);
-						ghost.remove(ghost_p);
-						return;
-					}
-				}
+				System.out.println("귀신맞았다귀신맞았다귀신맞았다귀신맞았다귀신귀신귀신인가몬스터인가어어어");
+				System.out.println("몇번째 ghost? >> " + gcnt);
+				
+				GhostThread targetThread = vectorGhost.get(gcnt);
+				targetThread.interrupt();
+				vectorGhost.remove(targetThread);
+				ghost.remove(ghost_p);
+				return;
 			}
 			gcnt++;
 		}
@@ -352,6 +354,8 @@ public class MapPanel extends JPanel implements Serializable{
 			this.bullet = bullet;
 			this.change_x=change_x;
 			this.change_y=change_y;
+			Audio b = new Audio("res/music/gun.wav",false);
+			b.start(false);
 		}
 		
 		
@@ -421,7 +425,6 @@ public class MapPanel extends JPanel implements Serializable{
 		}
 		
 		private void movingdirection(Point ghost) {
-			// ghost가 사방으로 다 갈 수 있을때는..........어떻게 할까요......
 			if(mapPanel.getXY(ghost.x, ghost.y - 1)!=1 && ghost.y > 0) { // ghost가 위로 갈 때 벽이 없으면 -> 위아래로 이동
 				goUp = true;
 				return;
