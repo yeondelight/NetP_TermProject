@@ -33,12 +33,32 @@ public class GameRoomView extends JFrame{
 	private static final String READYOFF = "READYOFF";
 	private static final String SPECTATOR = "SPECTATOR";
 	
+	// 이하 Protocol msg
+	private static final String C_LOGIN = "100";		// 새로운 client 접속
+	private static final String C_ACKLIST = "101";		// C->S 101을 정상적으로 수신
+	private static final String C_MAKEROOM = "200";		// 새로운 방 생성
 	private static final String C_ENTROOM = "201";		// 해당 방에 입장 
-	private static final String C_SPECTENTROOM = "203";	// 해당 방에 입장
-	private static final String C_UPDROOM = "302";
-	private static final String C_STRGAME = "304";
-	private static final String C_EXITROOM = "308";
-	private static final String C_ENDGAME = "309";
+	private static final String C_SPECTENTROOM = "203";	// 해당 방에 입장 
+	private static final String C_CHATMSG = "301";		// C->S GameRoom 내 일반 채팅 메세지
+	private static final String C_UPDROOM = "302";		// C->S GameRoom 업데이트좀
+	private static final String C_ACKROOM = "303";		// C->S 320 ACK
+	private static final String C_STRGAME = "304";		// C->S 게임 시작할래
+	private static final String C_UPDGAME = "305";		// Client -> Server 움직임 알림
+	private static final String C_UPDSCORE = "307";		// Client -> Server 점수 변경 알림
+	private static final String C_EXITROOM = "308";		// Client -> Server 나 나갈래
+	private static final String C_ENDGAME = "400";		// Client -> Server 게임 끝났어
+			
+	private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
+	private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
+	private static final String S_UPDLIST = "210";		// room 목록 update
+	private static final String S_ENTROOM = "220";		// S->C room 입장 허가
+	private static final String S_CHATMSG = "310";		// S->C GameRoom 내 방송
+	private static final String S_UPDROOM = "320";		// GameRoom 정보 update : user 수 반환
+	private static final String S_USRLIST = "330";		// userList update
+	private static final String S_STRGAME = "340";		// S->C 그래 시작해
+	private static final String S_UPDGAME = "350";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Event)
+	private static final String S_UPDTIME = "360";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Timer)
+	private static final String S_UPDSCORE = "370";		// 각 게임방의 Client로 게임 정보 변경 일괄 전송 (Score)
 	
 	private WaitingView parent;
 	private GameRoomView gameRoomView;
@@ -234,8 +254,11 @@ public class GameRoomView extends JFrame{
 			if (!btnStatus.get(i).equals(READYON))
 				break;
 		}
-		if (i==btnStatus.size() && status.equals(READYON))
+		System.out.println(spectatorList.contains((String)myName));
+		if (i==btnStatus.size() && status.equals(READYON))	// 관전자는 start 못누르게
 			startBtn.setEnabled(true);
+		else if (spectatorList.contains(myName))
+			startBtn.setEnabled(false);
 		else
 			startBtn.setEnabled(false);
 			
@@ -252,8 +275,16 @@ public class GameRoomView extends JFrame{
 	}
 	
 	// 새로운 관전자 User 추가
-	public void addSpectatorUser(String name, String status) {
+	public void addSpectatorUser(String name) {
 		spectatorList.add(name);
+		
+		if (spectatorList.contains(myName))
+			startBtn.setEnabled(false);
+	}
+	
+	// 관전자 삭제
+	public void delSpectatorUser(String name) {
+		spectatorList.remove(name);
 	}
 	
 	// 화면에 출력 - Chatting

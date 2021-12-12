@@ -51,7 +51,7 @@ public class WaitingView extends JFrame {
 	private static final String C_UPDGAME = "305"; // Client -> Server 움직임 알림
 	private static final String C_UPDSCORE = "307"; // Client -> Server 점수 변경 알림
 	private static final String C_EXITROOM = "308"; // Client -> Server 나 나갈래
-	private static final String C_ENDGAME = "309"; // Client -> Server 게임 끝났어
+	private static final String C_ENDGAME = "400"; // Client -> Server 게임 끝났어
 
 	private static final String S_REQLIST = "110"; // S->C 생성되어 있는 room 개수 전송
 	private static final String S_SENLIST = "120"; // S->C 각 room의 key, name 전송
@@ -287,8 +287,7 @@ public class WaitingView extends JFrame {
 							String val[] = cm.getData().split(" ");
 							String name = val[0];
 							String status = val[1];
-							// gameRoomView.addSpectatorUser(name, status);
-							gameRoomView.addSpectatorUser(name, status);
+							gameRoomView.addSpectatorUser(name);
 						}
 
 						// S_UPDGAME(350)
@@ -526,6 +525,9 @@ public class WaitingView extends JFrame {
 				if (!status.equals(AVAIL)) {
 					roomView.name.setForeground(disable);
 					roomView.enter.setEnabled(false);
+					
+					if(status.equals(STARTED))						// 게임을 시작한 방은 관전자도 입장 불가
+						roomView.spectator.setEnabled(false);
 
 					switch (pNum) {
 					case 1:
