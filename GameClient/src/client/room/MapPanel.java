@@ -51,6 +51,8 @@ public class MapPanel extends JPanel implements Serializable{
 	private ImageIcon iIcon = new ImageIcon("res/item.png");
 	private Image itemImg = iIcon.getImage();
 	
+	private Audio coinSound = new Audio("res/music/getCoin.wav",true);
+	
 	// ghost Á¤º¸
 	private Vector<Point> ghost = new Vector<Point>();
 	private ImageIcon gIcon = new ImageIcon("res/ghost.png");
@@ -262,6 +264,7 @@ public class MapPanel extends JPanel implements Serializable{
 		for(int i = 0; i < item.size(); i++) {
 			Point p = item.get(i);
 			if(p.x*UNIT == coordinate.x && p.y*UNIT == coordinate.y) {
+				coinSound.start(false);
 				item.remove(i);
 				if(userName.equals(myName))
 					parent.SendObject(new ChatMsg(myName, C_UPDSCORE, roomKey + " " + "+", 10));
