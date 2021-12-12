@@ -184,7 +184,7 @@ public class GameServer extends JFrame{
 				private static final String C_UPDGAME = "305";		// Client -> Server 움직임 알림
 				private static final String C_UPDSCORE = "307";		// Client -> Server 점수 변경 알림
 				private static final String C_EXITROOM = "308";		// Client -> Server 나 나갈래
-				private static final String C_ENDGAME = "309";		// Client -> Server 게임 끝났어
+				private static final String C_ENDGAME = "400";		// Client -> Server 게임 끝났어
 				
 				private static final String S_REQLIST = "110";		// S->C 생성되어 있는 room 개수 전송
 				private static final String S_SENLIST = "120";		// S->C 각 room의 key, name 전송
@@ -634,7 +634,8 @@ public class GameServer extends JFrame{
 						boolean refresh = Boolean.parseBoolean(val[1]);
 						GameRoom room = roomManager.getRoom(key);
 						this.exitRoom();
-						if(!this.getUserStatus().equals(SPECTATOR))				// 관전자의 status는 그대로 SPECTATOR
+						// TODO : 관전자의 status는 그대로 SPECTATOR -> 그럼 replay할 때 오류생겨요,,,ㅠㅠ
+						//if(!this.getUserStatus().equals(SPECTATOR))
 							this.setUserStatus(ONLINE);
 						for (int i = 0; i < user_vc.size(); i++) {
 							UserService user = (UserService) user_vc.elementAt(i);
@@ -652,7 +653,7 @@ public class GameServer extends JFrame{
 							WriteAllObject(new ChatMsg(UserName, S_UPDLIST, roomManager.getSize()+""));
 					}
 					
-					// C_ENDGAME(309)
+					// C_ENDGAME(400)
 					// Client -> Server 게임 끝났어
 					// new ChatMsg(USERNAME, 308, roomKey) 형태
 					else if (cm.getCode().matches(C_ENDGAME)) {
@@ -673,17 +674,6 @@ public class GameServer extends JFrame{
 						else
 							room.setStatus(FULL);
 					}
-					
-					// exit 처리
-					//else if(cmds[1].equals("/exit")) {
-					//	dos.close();
-					//	dis.close();
-					//	client_socket.close();
-					//	UserVec.removeElement(this);
-					//	WriteAll("[" + UserName + "] 님이 퇴장하셨습니다.\n");
-					//	AppendText("사용자 퇴장. 남은 참가자 수 " + UserVec.size());
-					//	break;
-					//}
 					
 					else { // 일반 채팅 메시지
 						UserStatus = ONLINE;

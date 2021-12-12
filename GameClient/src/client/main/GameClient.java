@@ -80,6 +80,8 @@ public class GameClient extends JFrame{
 
 		setResizable(false);
 		setVisible(true);
+		
+		txtUserName.requestFocus();
 	}
 	
 	class Myaction implements ActionListener // 내부클래스로 액션 이벤트 처리 클래스
